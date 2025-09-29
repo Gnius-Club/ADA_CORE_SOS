@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ada IA - Misiones de Ciudadanía Digital</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg-color: #1a1d24;
+            --surface-color: #242831;
+            --primary-color: #5865f2; /* Color por defecto */
+            --text-color: #f0f0f0;
+            --text-muted: #a0a0b0;
+            --accent-gradient: linear-gradient(45deg, #5865f2, #a458f2);
+            --shadow-color: rgba(88, 101, 242, 0.5);
+            --shadow: 0 10px 30px rgba(0,0,0,0.3);
+            --border-radius: 16px;
+            --transition-curve: cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--bg-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            color: var(--text-color);
+        }
+
+        #widget-container {
+            width: 100%;
+            max-width: 850px;
+            height: 540px; 
+            background-color: var(--surface-color);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            position: relative;
+            transition: max-width 0.5s var(--transition-curve), height 0.5s var(--transition-curve), box-shadow 0.5s var(--transition-curve);
+        }
+
+        /* --- Pantalla de Selección de Grado --- */
+        #grade-selector-container {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+            text-align: center;
+            background: var(--surface-color);
+            transition: opacity 0.5s var(--transition-curve), transform 0.5s var(--transition-curve);
+            z-index: 10;
+            overflow: hidden;
+        }
+        #grade-selector-container::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 900px;
+            height: 900px;
+            background: radial-gradient(circle, rgba(88, 101, 242, 0.08), transparent 60%);
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+        }
+        #grade-selector-container.hidden {
+            opacity: 0;
+            transform: scale(0.95);
+            pointer-events: none;
+        }
+        #grade-selector-container h1 {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-fill-color: transparent;
+        }
+        #grade-selector-container p {
+            color: var(--text-muted);
+            margin-bottom: 35px;
+            font-size: 16px;
+            max-width: 400px;
+        }
+        #grade-buttons {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            width: 100%;
+            max-width: 600px;
+        }
+        .grade-button {
+            padding: 15px;
+            border: 2px solid rgba(255,255,255,0.1);
+            background-color: transparent;
+            color: var(--text-color);
+            font-family: 'Poppins', sans-serif;
+            font-size: 16px;
+            font-weight: 600;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 1;
+        }
+        .grade-button:hover {
+            transform: translateY(-5px);
+            background: var(--grade-gradient);
+            box-shadow: 0 8px 25px var(--grade-shadow);
+            border-color: transparent;
+        }
+
+        /* --- Contenedor Principal de Misiones --- */
+        #main-content-container {
+            display: flex; width: 100%; height: 100%; opacity: 0;
+            transform: scale(1.05); transition: opacity 0.5s var(--transition-curve), transform 0.5s var(--transition-curve);
+            pointer-events: none; flex-direction: column;
+        }
+        #main-content-container.visible { opacity: 1; transform: scale(1); pointer-events: auto; }
+        
+        #main-header {
+            display: flex; justify-content: space-between; align-items: center; padding: 12px 25px;
+            background-color: rgba(0,0,0,0.2); flex-shrink: 0;
+            transition: height 0.5s var(--transition-curve), padding 0.5s var(--transition-curve), opacity 0.3s ease;
+        }
+        #main-header h2 { font-size: 16px; color: var(--text-muted); }
+        #back-to-grades-button {
+            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: var(--text-muted);
+            padding: 6px 14px; border-radius: 10px; cursor: pointer; font-size: 13px; font-family: 'Poppins', sans-serif; transition: all 0.3s ease;
+        }
+        #back-to-grades-button:hover { background-color: var(--primary-color); color: white; }
+        
+        #mission-view { display: flex; flex-grow: 1; overflow: hidden; }
+
+        #missions-list-container {
+            flex: 0 0 300px; min-width: 300px; overflow-y: auto; position: relative; scrollbar-width: none; -ms-overflow-style: none;
+            transition: flex-basis 0.5s var(--transition-curve), min-width 0.5s var(--transition-curve), opacity 0.4s ease;
+        }
+        #missions-list-container::-webkit-scrollbar { display: none; }
+        #missions-list-container::before, #missions-list-container::after { content: ''; display: block; height: 220px; }
+        #missions-list-container { mask-image: linear-gradient(to bottom, transparent, black 25%, black 75%, transparent); padding: 0 20px; }
+        
+        .mission-card {
+            padding: 20px; margin-bottom: 15px; border-radius: var(--border-radius); cursor: pointer;
+            overflow: hidden; border: 2px solid transparent; position: relative; transform: scale(0.9);
+            opacity: 0.6; transition: all 0.4s var(--transition-curve);
+        }
+        .mission-card.active { transform: scale(1.1); opacity: 1; background: var(--accent-gradient); box-shadow: 0 8px 25px var(--shadow-color); }
+        .mission-card:not(.active):hover { transform: scale(0.95); opacity: 0.8; border-color: rgba(88, 101, 242, 0.3); }
+        .mission-number { position: absolute; top: -10px; left: -10px; font-size: 80px; font-weight: 700; color: rgba(255,255,255,0.05); z-index: 1; transition: color 0.4s ease; }
+        .mission-card.active .mission-number { color: rgba(255,255,255,0.2); }
+        .mission-title { position: relative; z-index: 2; font-size: 18px; font-weight: 600; color: var(--text-muted); transition: color 0.4s ease; }
+        .mission-card.active .mission-title { color: white; }
+
+        #mission-details {
+            flex: 1; background-color: rgba(0,0,0,0.15); position: relative; overflow: hidden;
+        }
+        
+        #mission-details-content {
+            position: absolute; inset: 0; padding: 30px 40px; display: flex; flex-direction: column;
+            justify-content: flex-start; overflow-y: auto;
+            opacity: 1; transform: translateX(0);
+            transition: opacity 0.5s var(--transition-curve), transform 0.5s var(--transition-curve);
+        }
+        #mission-details-content::-webkit-scrollbar { width: 5px; }
+        #mission-details-content::-webkit-scrollbar-track { background: transparent; }
+        #mission-details-content::-webkit-scrollbar-thumb { background-color: var(--primary-color); border-radius: 10px; }
+        #mission-details-content.hidden { opacity: 0; transform: translateX(-30px); pointer-events: none; }
+
+        #mission-details h2 { font-size: 28px; font-weight: 700; margin-bottom: 8px; flex-shrink: 0;}
+        #mission-details .hook { font-size: 16px; color: var(--text-muted); margin-bottom: 24px; flex-shrink: 0;}
+        #mission-details h3 { font-size: 16px; font-weight: 600; color: var(--primary-color); margin-bottom: 12px; flex-shrink: 0;}
+        #mission-details ul { list-style: none; margin-bottom: 30px; flex-shrink: 0;}
+        #mission-details ul li { font-size: 15px; color: var(--text-muted); margin-bottom: 8px; padding-left: 25px; position: relative; }
+        #mission-details ul li::before { content: '✓'; position: absolute; left: 0; color: var(--primary-color); font-weight: 700; }
+        .ada-button {
+            display: inline-block; padding: 14px 28px; background: var(--accent-gradient); color: #ffffff; font-size: 16px; font-weight: 600;
+            text-decoration: none; border: none; border-radius: var(--border-radius); cursor: pointer;
+            transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0,0,0,0.2); align-self: flex-start; margin-top: auto; flex-shrink: 0;
+        }
+        .ada-button:hover { transform: translateY(-4px) scale(1.02); box-shadow: 0 8px 25px var(--shadow-color); }
+        
+        #chatbot-container {
+            position: absolute; inset: 15px; opacity: 0; transform: translateX(30px); pointer-events: none;
+            transition: all 0.5s var(--transition-curve);
+            display: flex; flex-direction: column; border-radius: var(--border-radius); background-color: var(--surface-color);
+        }
+        .chatbot-header { 
+            display: flex; justify-content: space-between; align-items: center; padding: 18px 25px;
+            background-color: rgba(0,0,0,0.2); flex-shrink: 0; border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .chatbot-header .mission-name-chatbot { font-size: 20px; font-weight: 700; color: var(--primary-color); }
+        .back-button {
+            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: var(--text-muted); padding: 6px 14px;
+            border-radius: 10px; cursor: pointer; font-size: 13px; font-family: 'Poppins', sans-serif; transition: all 0.3s ease;
+        }
+        .back-button:hover { background-color: var(--primary-color); border-color: var(--primary-color); color: white; transform: scale(1.05); }
+        #chatbot-container iframe { flex-grow: 1; border: none; border-bottom-left-radius: var(--border-radius); border-bottom-right-radius: var(--border-radius); }
+
+        /* --- LÓGICA DE EXPANSIÓN COMPLETA Y GLOW --- */
+        #widget-container.chatbot-active {
+            max-width: 700px;
+            height: 85vh;
+            max-height: 800px;
+            box-shadow: 0 0 50px -10px var(--shadow-color); /* EFECTO GLOW */
+        }
+        #widget-container.chatbot-active #main-header {
+            height: 0;
+            padding-top: 0;
+            padding-bottom: 0;
+            opacity: 0;
+            overflow: hidden;
+        }
+        #widget-container.chatbot-active #missions-list-container {
+            flex-basis: 0;
+            min-width: 0;
+            opacity: 0;
+            overflow: hidden;
+        }
+        #widget-container.chatbot-active #chatbot-container {
+            opacity: 1; transform: translateX(0); pointer-events: auto;
+            inset: 0;
+            border-radius: 0; 
+        }
+         #widget-container.chatbot-active #chatbot-container iframe {
+            border-radius: 0;
+            border-bottom-left-radius: var(--border-radius);
+            border-bottom-right-radius: var(--border-radius);
+         }
+
+    </style>
+</head>
+<body>
+
+    <div id="widget-container">
+        <div id="grade-selector-container">
+            <h1>Ada IA</h1>
+            <p>Tu asistente de Ciudadanía Digital.<br>Selecciona un grado para comenzar tu aventura.</p>
+            <div id="grade-buttons"></div>
+        </div>
+        <div id="main-content-container">
+            <header id="main-header">
+                <h2 id="main-header-title"></h2>
+                <button id="back-to-grades-button">← Cambiar Grado</button>
+            </header>
+            <div id="mission-view">
+                <div id="missions-list-container"></div>
+                <div id="mission-details"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+
+        const gradeData = {
+            'p4': {
+                displayName: '4º Primaria',
+                chatbotUrl: 'https://gnius-club.github.io/ADA_CORE_P4/',
+                colors: { gradient: 'linear-gradient(45deg, #f25858, #f2a458)', shadow: 'rgba(242, 88, 88, 0.6)' },
+                missions: [
+                    { title: 'Misión 1: Rojo', hook: 'Cada foto que subes, cada like que das, cada comentario que escribes... ¿sabías que todo eso crea un "tú" en internet? ¡Vamos a descubrir cómo es tu identidad digital!', learnings: ['Entender qué es la identidad digital y cómo se construye.','Ver cómo lo que publicas hace que otros te vean de cierta forma.','Aprender por qué es súper importante pensar antes de publicar algo.'] },
+                    { title: 'Misión 2: Naranja', hook: 'Lo que para ti es un chiste, para otro puede ser un golpe. ¿Cómo saber si lo que compartes puede lastimar a alguien? ¡Es hora de activar tu súper poder de la empatía!', learnings: ['Descubrir cómo tus publicaciones pueden hacer sentir a los demás.','Pensar en las consecuencias de compartir antes de darle clic al botón.','Practicar la empatía para ser un campeón del respeto en línea.'] },
+                    { title: 'Misión 3: Amarillo', hook: '¿Te imaginas dejar la puerta de tu casa abierta? ¡Configurar la privacidad de tus cuentas es como ponerle el candado a tu cuarto digital! ¿Sabes cómo hacerlo?', learnings: ['Explorar los botones y ajustes de privacidad de tus apps favoritas.','Decidir quién puede ver lo que publicas: ¿todos, tus amigos, o solo tú?','Entender por qué una buena configuración te mantiene a salvo.'] },
+                    { title: 'Misión 4: Verde', hook: 'A veces una broma deja de ser chistosa y empieza a lastimar. ¿Sabes cuándo se cruza la línea y se convierte en acoso? ¡Vamos a aprender a diferenciarlo!', learnings: ['Aprender la diferencia entre una broma, un pleito y el ciberacoso.','Identificar las señales cuando alguien se siente mal por algo en línea.','Desarrollar tu juicio para saber qué está bien y qué está mal en internet.'] },
+                    { title: 'Misión 5: Azul', hook: 'Si ves que alguien está siendo molestado en un chat o un juego, ¿qué haces? ¿Te quedas callado o actúas? Descubre cómo tu ayuda puede cambiarlo todo.', learnings: ['Reconocer cuando una situación en línea se está volviendo fea.','Ponerte en los zapatos del otro y pensar: ¿cómo se sentirá?','Saber qué hacer y a quién pedir ayuda cuando veas ciberacoso.'] },
+                    { title: 'Misión 6: Morado', hook: '¡Noticia de último momento! ¿Pero... será cierta? En internet hay mucha información falsa. Conviértete en un detective de la verdad y aprende a no caer en trampas.', learnings: ['Descubrir cómo reconocer si una página de internet es confiable.','Aprender a comparar diferentes noticias para encontrar la verdad.','Usar pistas para saber si un contenido es real o falso.'] },
+                    { title: 'Misión 7: Rosa', hook: '¿Te pidieron una tarea y no sabes qué páginas usar? ¡No todas las fuentes son iguales! Aprende a buscar como un profesional y a encontrar la información más chida y confiable.', learnings: ['Conocer los secretos para evaluar si una información es verdadera.','Practicar cómo buscar y verificar datos para tus trabajos escolares.','Convertirte en un experto en encontrar evidencia real en la red.'] },
+                    { title: 'Misión 8: Café', hook: 'Videojuegos, series, tareas, jugar afuera... ¿cómo hacer que todo quepa en un día? ¡Vamos a crear un horario visual para que tengas tiempo para todo sin volverte loco!', learnings: ['Usar dibujos y colores para organizar tu tiempo digital y real.','Encontrar el balance perfecto entre la pantalla, el juego y el descanso.','Crear tu propio plan para disfrutar de la tecnología sin pasarte.'] },
+                    { title: 'Misión 9: Gris', hook: '¿Sientes que a veces no puedes soltar el celular o la tablet? ¡Tú tienes el control! Aprende a decidir cuándo conectarte y cuándo es momento de hacer una pausa.', learnings: ['Tomar el control de tu propio horario y rutina digital.','Evaluar si estás usando la tecnología de una forma saludable para ti.','Descubrir trucos para no distraerte y manejar tu tiempo como un campeón.'] },
+                    { title: 'Misión 10: Negro', hook: '¿Cómo es que Siri o Alexa te entienden? ¡Aprenden con datos, como cuando tú estudias para un examen! Descubre el secreto de cómo "piensa" la Inteligencia Artificial.', learnings: ['Entender qué es un modelo de IA y cómo se "entrena" con información.','Ver por qué es importante que la IA aprenda de datos muy diferentes.','Descubrir cómo evitar que la IA sea injusta con algunas personas.'] },
+                    { title: 'Misión 11: Blanco', hook: 'Si a una IA solo le enseñas fotos de perros, ¡nunca aprenderá a reconocer un gato! La calidad de los datos lo es todo. Vamos a ver cómo se entrena a una IA para que sea súper lista.', learnings: ['Conectar la calidad de los datos con los resultados que da la IA.','Entender por qué una IA puede cometer errores si sus datos no son buenos.','Diferenciar entre "entrenar" a la IA y "ponerla a prueba".'] },
+                    { title: 'Misión 12: Turquesa', hook: 'Ese filtro divertido que usa tu cara o el asistente que escucha tu voz... ¡usan Inteligencia Artificial! ¿Pero qué pasa con los datos que capturan? Aprende a proteger tu imagen y tu voz.', learnings: ['Descubrir cómo la IA puede reconocer caras, imágenes y voces.','Saber qué datos personales pueden ser capturados sin que te des cuenta.','Aprender trucos para ponerle límites a la IA y cuidar tu privacidad.'] },
+                    { title: 'Misión 13: Dorado', hook: 'Tu cara, tu voz, tus movimientos... ¡son datos súper personales! ¿Estás seguro de que quieres compartirlos con cualquier app? Es hora de poner límites y decidir qué puede ver o escuchar la IA.', learnings: ['Identificar qué datos tuyos son sensibles, como tu rostro o tu voz.','Conocer los riesgos de que tu imagen o sonido anden por ahí en internet.','Crear tus propias reglas para protegerte en el mundo digital.'] },
+                    { title: 'Misión 14: Plateado', hook: 'Si una IA decide quién entra a un juego o a quién le dan un premio, ¿cómo sabemos que es justa? ¿Y si solo elige a los mismos de siempre? ¡Vamos a investigar la justicia en los algoritmos!', learnings: ['Entender que las decisiones de la IA dependen de cómo fue creada.','Descubrir qué es el "sesgo" y cómo puede hacer que la IA sea injusta.','Reflexionar sobre qué pasa si los datos no representan a todos por igual.'] },
+                    { title: 'Misión 15: Coral', hook: 'Una IA comete un error y perjudica a alguien. ¿Quién tiene la culpa? ¿El que la creó, el que la usa, la propia IA? ¡Un debate de detectives sobre la responsabilidad digital!', learnings: ['Ver qué grupos de personas pueden ser ignorados o excluidos por una IA.','Pensar en cómo podemos crear una IA que sea más justa para todos.','Preguntarnos quién se hace responsable si un algoritmo se equivocaba.'] },
+                    { title: 'Misión 16: Lavanda', hook: '¡Felicidades, Agente Digital! Has completado todas tus misiones. Ahora tienes el poder de crear una guía para los nuevos exploradores. ¿Qué es lo más importante que aprendiste?', learnings: ['Hacer un resumen de tu identidad digital y cómo cuidarla.','Crear las "Reglas de Oro" para proteger tu privacidad en línea.','Compartir los mejores trucos para verificar información y no caer en fake news.','Diseñar tu propio manifiesto para usar la tecnología de forma sana y feliz.'] }
+                ]
+            },
+            'p5': {
+                displayName: '5º Primaria',
+                chatbotUrl: 'https://gnius-club.github.io/ADA_CORE_P5/',
+                colors: { gradient: 'linear-gradient(45deg, #58f2a4, #58b9f2)', shadow: 'rgba(88, 242, 164, 0.6)' },
+                missions: [
+                    { title: 'Misión 1: Volcán', hook: 'Una foto, un comentario, un like... ¿Sabes que todo lo que haces en línea crea tu reputación? Piénsalo, ¿cómo te ven los demás en internet?', learnings: ['Entender qué es la reputación digital y por qué es importante.', 'Ver cómo lo que publicas puede tener un impacto bueno o malo.', 'Pensar en la imagen que quieres proyectar en el mundo digital.'] },
+                    { title: 'Misión 2: Tornado', hook: 'Tu perfil en línea es como tu carta de presentación al mundo. ¿Estás seguro de que muestra tu mejor versión? ¡Es hora de tomar el control!', learnings: ['Crear un plan para cuidar tu imagen en redes sociales.', 'Aprender a usar herramientas para ver qué se dice de ti en línea.', 'Descubrir cómo tus acciones de hoy construyen tu futuro digital.'] },
+                    { title: 'Misión 3: Relámpago', hook: 'Ves que molestan a un amigo en un chat. ¿Qué haces? ¿Te quedas callado o actúas? Ser un buen ciudadano digital también es saber apoyar.', learnings: ['Aprender a apoyar a un amigo que está pasando por un mal rato en línea.', 'Manejar tus propias emociones si alguien te molesta en internet.', 'Saber cómo ser un testigo que ayuda, en lugar de solo mirar.'] },
+                    { title: 'Misión 4: Glaciar', hook: '¿Y si en lugar de apagar fuegos, evitamos que empiecen? Vamos a crear un espacio en línea donde todos se sientan seguros y respetados.', learnings: ['Crear con tu grupo unas reglas para llevarse bien en los chats y juegos.', 'Detectar las primeras señales de un conflicto antes de que se haga grande.', 'Usar palabras que construyan un ambiente chido y positivo para todos.'] },
+                    { title: 'Misión 5: Terremoto', hook: 'Viste una noticia increíble, ¿pero será cierta? No todo lo que brilla en internet es verdad. ¡Conviértete en un detective de noticias!', learnings: ['Entender qué son las "fake news" y por qué son un problema.', 'Diferenciar entre un anuncio, una opinión y una noticia real.', 'Hacerte las preguntas clave: ¿quién lo dice? ¿por qué? ¿dónde más aparece?'] },
+                    { title: 'Misión 6: Tsunami', hook: 'Esa foto increíble parece demasiado buena para ser verdad. ¿Cómo lo compruebas? Te daremos herramientas de detective para que no te la apliquen.', learnings: ['Usar trucos fáciles para verificar si una noticia o foto es real.', 'Aprender a buscar una misma noticia en diferentes sitios para compararla.', 'Desarrollar un "superpoder" para dudar de forma inteligente.'] },
+                    { title: 'Misión 7: Eclipse', hook: '¿Te ha pasado que después de estar mucho en el celular te sientes cansado o de mal humor? No estás solo. Hablemos de cómo nos afecta la pantalla.', learnings: ['Revisar cuánto tiempo pasas en tus apps y cómo te hace sentir.', 'Conectar tus emociones (ansiedad, frustración) con el tiempo que pasas en línea.', 'Crear tu propio plan para desconectarte un rato y sentirte mejor.'] },
+                    { title: 'Misión 8: Cometa', hook: 'Tu perfil, tus fotos, tus datos... ¿quién puede verlos? Es hora de convertirte en el guardián de tu propia información. ¡Configura tu privacidad como un pro!', learnings: ['Ajustar quién ve lo que publicas en tus apps y redes sociales.', 'Entender qué permisos le das a las apps (¿por qué un juego necesita tu micrófono?).', 'Evaluar los riesgos de tener un perfil público vs. uno privado.'] },
+                    { title: 'Misión 9: Supernova', hook: 'Imagina que creas un perfil para un superhéroe. ¿Qué publicarías para que todos vieran lo increíble que es? ¡Ahora aplícalo a ti!', learnings: ['Diseñar un perfil de prueba que muestre cualidades positivas.', 'Pensar en cómo tus publicaciones reflejan quién eres y lo que te importa.', 'Identificar los riesgos y oportunidades al construir tu imagen en línea.'] },
+                    { title: 'Misión 10: Nebulosa', hook: 'Cada like y comentario es parte de tu "huella digital". ¿Alguna vez has buscado la tuya? Vamos a jugar a ser detectives de nuestro propio rastro.', learnings: ['Entender qué es la huella digital y cómo se forma con todo lo que haces.', 'Hacer una búsqueda simulada para ver cómo se ve la huella de alguien.', 'Reflexionar sobre cómo esa huella crea una imagen de ti para los demás.'] },
+                    { title: 'Misión 11: Géiser', hook: '¿Sabías que en el futuro podrían buscar tus redes para un trabajo? Lo que publicas hoy cuenta tu historia mañana. ¿Qué historia cuenta tu huella?', learnings: ['Identificar las partes más visibles de tu huella: fotos, comentarios, perfiles.', 'Interpretar la imagen que proyecta una huella digital, tanto lo bueno como lo malo.', 'Pensar en los riesgos y oportunidades de lo que dejas expuesto en la red.'] },
+                    { title: 'Misión 12: Avalancha', hook: 'Si le pides a una IA que dibuje a "una persona exitosa", ¿qué crees que muestra? A veces, la IA aprende cosas injustas de internet. ¡Descubramos por qué!', learnings: ['Entender qué es el "Big Data" con ejemplos de tu día a día.', 'Descubrir cómo la Inteligencia Artificial aprende de miles de ejemplos.', 'Ver cómo la IA puede tomar decisiones "injustas" si aprende de datos con estereotipos.'] },
+                    { title: 'Misión 13: Monzón', hook: 'Buscas "ingenieros" y solo salen hombres. ¿Por qué? La IA a veces tiene una "memoria injusta". Vamos a entender cómo y qué podemos hacer para cambiarlo.', learnings: ['Analizar qué pasa cuando la IA aprende con ejemplos llenos de estereotipos.', 'Comprender cómo tus propios datos (likes, fotos) alimentan lo que la IA aprende.', 'Discutir sobre cómo podemos ayudar a que la IA sea más justa para todos.'] },
+                    { title: 'Misión 14: Cañón', hook: 'Un algoritmo es una receta de pasos. ¿Y si creamos una "receta" para que una IA sea amable y justa? ¡Tú puedes diseñar las reglas!', learnings: ['Entender qué es un algoritmo con ejemplos fáciles, como hacer un sándwich.', 'Diseñar instrucciones sencillas para que una decisión automática no excluya a nadie.', 'Aprender a "traducir" valores como el respeto a reglas que una compu pueda seguir.'] },
+                    { title: 'Misión 15: Duna', hook: 'Si programas un robot para que te ayude en la escuela, ¿qué reglas le pondrías? "Sé respetuoso", "ayuda a todos por igual". ¡Eso es diseñar con ética!', learnings: ['Crear reglas simples para una IA, como "incluir a todos" o "no dañar".', 'Practicar cómo convertir ideas de "lo que está bien" en instrucciones claras.', 'Debatir sobre los grandes retos éticos que enfrenta la Inteligencia Artificial hoy.'] },
+                    { title: 'Misión 16: Arrecife', hook: '¿Sabías que la IA ayuda a doctores a detectar enfermedades o a proteger selvas? La tecnología no es solo para jugar, ¡puede cambiar el mundo para bien!', learnings: ['Conocer ejemplos increíbles de cómo la IA ayuda a cuidar el planeta.', 'Descubrir cómo se usa la IA en la medicina para salvar vidas.', 'Ver cómo la tecnología crea herramientas para ayudar a personas con discapacidad.'] },
+                    { title: 'Misión 17: Vórtice', hook: 'Imagina un guardián en la selva que avisa si alguien corta un árbol. ¡Eso ya existe y usa IA! Descubre el poder de la tecnología para el bien común.', learnings: ['Entender que la IA puede ser una herramienta poderosa para el bien de la comunidad.', 'Explorar ideas de cómo tú podrías usar la tecnología para resolver un problema.', 'Convertirte en un promotor de la tecnología con propósito.'] }
+                ]
+            },
+            'p6': {
+                displayName: '6º Primaria',
+                chatbotUrl: 'https://gnius-club.github.io/ADA_CORE_P6/',
+                colors: { gradient: 'linear-gradient(45deg, #a458f2, #f258b9)', shadow: 'rgba(164, 88, 242, 0.6)' },
+                missions: [
+                    { title: 'Misión 1: Diamante', hook: 'En internet, ¿eres la misma persona que en la vida real? ¿Tu "yo digital" se parece de verdad a ti?', learnings: ['Entender la diferencia entre tu "yo real" y tu "yo digital".', 'Analizar qué muestras en tus perfiles y por qué lo haces.', 'Reflexionar si lo que publicas es auténtico y te representa.'] },
+                    { title: 'Misión 2: Rubí', hook: 'Si pudieras diseñar tu perfil desde cero, ¿cómo sería? ¿Qué contarías de ti para que los demás te conozcan como realmente eres?', learnings: ['Identificar tus valores más importantes y cómo mostrarlos en línea.', 'Diseñar un perfil que sea seguro, respetuoso y que se parezca a ti.', 'Aprender a usar avatares para expresar tu identidad de forma creativa.'] },
+                    { title: 'Misión 3: Esmeralda', hook: 'Lo que publicas hoy se queda en internet para siempre. ¿Has pensado qué historia contará tu huella digital en el futuro?', learnings: ['Revisar tus publicaciones antiguas para ver si todavía te representan.', 'Diferenciar entre dejar una huella digital por accidente o con intención.', 'Identificar si lo que muestras en línea va de acuerdo con la persona que quieres ser.'] },
+                    { title: 'Misión 4: Zafiro', hook: 'Tu huella digital es como tu carta de presentación al mundo. ¿Estás construyendo una que te haga sentir orgulloso?', learnings: ['Crear un plan para mejorar y cuidar tu imagen en internet.', 'Analizar casos reales de cómo la huella digital afectó a otras personas.', 'Escribir un compromiso sobre cómo quieres que te vean en línea en el futuro.'] },
+                    { title: 'Misión 5: Amatista', hook: 'Te llega un mensaje con un link sospechoso o una oferta demasiado buena. ¿Qué haces? ¡Aprende a no caer en la trampa!', learnings: ['Analizar situaciones de riesgo digital y saber cómo reaccionar.', 'Hacerte preguntas clave antes de dar clic en algo que no conoces.', 'Crear tu propio plan de acción para mantenerte a salvo de engaños.'] },
+                    { title: 'Misión 6: Ópalo', hook: 'Ya sabes cómo cuidarte, ahora... ¿cómo puedes ayudar a los demás? Conviértete en un guardián de la seguridad digital.', learnings: ['Entender la importancia de no compartir fraudes o noticias falsas.', 'Crear una guía súper fácil para que tus amigos también se protejan.', 'Reflexionar sobre cómo podemos detener la difusión de engaños en equipo.'] },
+                    { title: 'Misión 7: Topacio', hook: 'Ves una noticia increíble en internet... pero, ¿será verdad? ¡Es hora de activar tu detector de mentiras digital!', learnings: ['Aprender a investigar quién creó una publicación, por qué y para qué.', 'Descubrir si los medios digitales tienen alguna intención oculta.', 'Practicar cómo analizar noticias y no creerse todo lo que ves.'] },
+                    { title: 'Misión 8: Jade', hook: '¿Sientes que Instagram o TikTok siempre te muestran lo mismo? No es casualidad, ¡son los algoritmos!', learnings: ['Debatir sobre el impacto de la desinformación en todos nosotros.', 'Descubrir cómo los algoritmos deciden qué contenido te muestran.', 'Entender qué son las "burbujas de información" y cómo te afectan.'] },
+                    { title: 'Misión 9: Obsidiana', hook: '¿Te desvelas viendo videos o te duele la espalda por estar en el cel? Hablemos de cómo la tecnología afecta tu cuerpo y mente.', learnings: ['Identificar el impacto del uso excesivo del celular en tu sueño, postura y emociones.', 'Conocer consecuencias reales como la falta de sueño o la dependencia.', 'Crear tu propio plan para usar la tecnología sin descuidar tu salud.'] },
+                    { title: 'Misión 10: Cuarzo', hook: 'Ves que alguien está molestando a un compañero en un chat grupal. ¿Qué haces? ¡Tu acción puede cambiarlo todo!', learnings: ['Participar en simulaciones para saber cómo actuar ante el ciberacoso.', 'Diseñar un plan con tus amigos para saber a quién pedir ayuda.', 'Crear una campaña en tu escuela para promover el buen trato en línea.'] },
+                    { title: 'Misión 11: Turquesa', hook: 'Ser un ciudadano digital es como serlo en la vida real: tienes derechos, pero también responsabilidades. ¿Las conoces?', learnings: ['Aprender a comportarte de forma ética en juegos, redes y foros.', 'Entender que copiar y pegar el trabajo de otros sin permiso no está bien.', 'Saber cómo y cuándo denunciar un comportamiento que rompe las reglas.'] },
+                    { title: 'Misión 12: Lapislázuli', hook: '¿Quieres ser un ejemplo para los demás? Conviértete en un líder que promueve lo mejor del mundo digital.', learnings: ['Entender que ser un líder es dar un buen ejemplo con tus acciones.', 'Crear campañas con carteles o videos para tu escuela.', 'Ayudar a compañeros más pequeños a navegar seguros en internet.'] },
+                    { title: 'Misión 13: Granate', hook: 'Si pudieras crear una Inteligencia Artificial para ayudar al mundo, ¿qué haría? ¡Vamos a diseñar una IA con buenos valores!', learnings: ['Imaginar cómo una IA podría resolver problemas en tu comunidad.', 'Aprender los principios para que una IA sea justa, respetuosa y segura.', 'Pensar a quién podría ayudar tu IA y a quién podría afectar sin querer.'] },
+                    { title: 'Misión 14: Ámbar', hook: 'Una IA no se crea sola, ¡necesita de todos! Descubre cómo tu voz es clave para decidir el futuro de la tecnología.', learnings: ['Entender tu rol como ciudadano para decidir qué tipo de IA queremos.', 'Trabajar en equipo para proponer una idea de IA que sea útil para todos.', 'Defender la idea de que la tecnología debe ser creada con un propósito positivo.'] },
+                    { title: 'Misión 15: Perla', hook: 'Desde el filtro que usas en una foto hasta la música que te recomienda una app... La IA está en todos lados. ¿Te habías dado cuenta?', learnings: ['Descubrir las formas "invisibles" en que la IA funciona en tu día a día.', 'Entender que la IA toma decisiones por ti sin que te des cuenta.', 'Cuestionar quién decide lo que ves primero en tus redes o apps.'] },
+                    { title: 'Misión 16: Onix', hook: 'La IA te recomendó una película y no te gustó. ¿Tienes derecho a saber por qué te la recomendó? ¡Claro que sí!', learnings: ['Pensar qué pasa si nunca cuestionamos las decisiones de la IA.', 'Descubrir el principio de explicabilidad: ¡poder saber por qué la IA decidió algo!', 'Entender los riesgos de no preguntar, como perder el control de lo que ves.'] },
+                    { title: 'Misión 17: Pirita', hook: 'La IA ya toma decisiones importantes en el mundo real. ¿Pero quién se asegura de que esas decisiones sean justas?', learnings: ['Analizar cómo la IA decide cosas en el transporte, la salud o la escuela.', 'Entender que nuestro papel como ciudadanos es vigilar que la IA no se equivoque.', 'Aprender a cuestionar y exigir que la tecnología sea justa para todos.'] },
+                    { title: 'Misión 18: Aguamarina', hook: 'Frente a una máquina, ¡no estás solo! Tienes derechos digitales que te protegen. ¿Sabes cuáles son?', learnings: ['Conocer tu derecho a que te expliquen por qué una IA decide algo.', 'Saber que tienes derecho a que corrijan un error si una IA se equivoca contigo.', 'Descubrir tu derecho a no ser discriminado por un algoritmo.'] },
+                    { title: 'Misión 19: Citrino', hook: '¿Te imaginas ser doctor, artista o ingeniero en un futuro con IA? Descubre cómo la tecnología puede ser tu mejor aliada.', learnings: ['Explorar cómo la IA está cambiando los trabajos y las profesiones.', 'Entender que la IA es una herramienta para potenciar tu talento.', 'Conocer las nuevas profesiones que existirán gracias a la IA.'] },
+                    { title: 'Misión 20: Piedra Lunar', hook: 'La IA puede hacer cosas increíbles, pero hay algo que nunca podrá reemplazar: tu humanidad. ¿Cuál es tu súper poder?', learnings: ['Reflexionar en qué cosas te gustaría que una IA te ayude y en cuáles no.', 'Pensar qué tipo de persona quieres ser en un mundo lleno de tecnología.', 'Fortalecer tu creatividad y tu capacidad de colaborar, ¡tus mejores herramientas!'] }
+                ]
+            },
+            's1': {
+                displayName: '1º Secundaria',
+                chatbotUrl: 'https://gnius-club.github.io/ADA_CORE_S1/',
+                colors: { gradient: 'linear-gradient(45deg, #F2C94C, #F2994A)', shadow: 'rgba(242, 201, 76, 0.6)' },
+                missions: [
+                    { title: 'Misión 1: Orquídea', hook: '¿Sientes la presión de ser "perfecto" en redes? ¿Lo que publicas es realmente quién eres?', learnings: ['Descubrir por qué a veces actuamos diferente en línea.', 'Identificar los estereotipos y cómo nos afectan.', 'Entender el impacto de compararte con los demás.'] },
+                    { title: 'Misión 2: Magnolia', hook: 'Vamos a jugar a ser videntes: ¿qué dirá de ti tu perfil en 5 años? ¿Te gustará lo que veas?', learnings: ['Analizar cómo te ven los demás según lo que compartes.', 'Simular cómo tu identidad digital puede evolucionar.', 'Crear una autoimagen con la que te sientas genial.'] },
+                    { title: 'Misión 3: Camelia', hook: 'Ese post de hace 3 años... ¿todavía te representa? Juguemos a ser detectives de tu propia huella digital.', learnings: ['Revisar tu historial de publicaciones como un pro.', 'Detectar qué información personal podría estar demasiado expuesta.', 'Aprender a "limpiar" tu pasado digital si es necesario.'] },
+                    { title: 'Misión 4: Azucena', hook: '¿Y si te dijéramos que puedes controlar lo que internet sabe de ti? Es hora de tomar el poder.', learnings: ['Crear un plan de acción para proteger tu privacidad.', 'Prevenir riesgos antes de que ocurran.', 'Decidir conscientemente qué tan visible quieres ser.'] },
+                    { title: 'Misión 5: Dalia', hook: '¿Realmente esa app necesita acceso a tu micrófono? Vamos a hackear tu seguridad digital.', learnings: ['Descubrir qué permisos tienen tus apps y por qué.', 'Crear contraseñas que sean (casi) imposibles de adivinar.', 'Corregir hábitos que ponen en riesgo tu información.'] },
+                    { title: 'Misión 6: Gardenia', hook: '¿Público, privado, amigos de amigos? Domina los ajustes de privacidad de tus redes como un experto.', learnings: ['Controlar quién ve, comenta o te etiqueta en tus posts.', 'Configurar tus cuentas para máxima seguridad.', 'Usar herramientas de bloqueo y denuncia de forma efectiva.'] },
+                    { title: 'Misión 7: Hortensia', hook: '¿Ese formulario para un juego online te pide demasiados datos? Aprende a detectar las banderas rojas.', learnings: ['Diferenciar entre datos públicos, privados y súper sensibles.', 'Decidir con seguridad cuándo es buena idea compartir información.', 'Reconocer formularios y sitios sospechoso al instante.'] },
+                    { title: 'Misión 8: Jazmín', hook: 'Ese mensaje de un príncipe nigeriano parece falso... pero algunos engaños son más sutiles. ¿Puedes detectarlos?', learnings: ['Distinguir entre un fraude, un error y manipulación intencional.', 'Analizar perfiles y mensajes sospechosos para protegerte.', 'Decidir la mejor acción: ignorar, bloquear o reportar.'] },
+                    { title: 'Misión 9: Lirio', hook: 'Recibes una cadena de WhatsApp sobre un premio increíble. ¿La reenvías o la rompes?', learnings: ['Entender tu responsabilidad al compartir información.', 'Aprender a crear alertas digitales para ayudar a tus amigos.', 'Convertirte en un muro contra los fraudes en tus grupos.'] },
+                    { title: 'Misión 10: Narciso', hook: 'Viste una noticia increíble, pero... ¿es real? Vamos a darte un kit de detective para la verdad.', learnings: ['Validar si una fuente es confiable o no.', 'Hacer las preguntas clave para no caer en la desinformación.', 'Saber dónde y cómo verificar lo que lees en línea.'] },
+                    { title: 'Misión 11: Rosa', hook: 'Titulares exagerados, fotos sacadas de contexto... La desinformación es un arte oscuro. Aprende a ver a través de ella.', learnings: ['Identificar noticias falsas, erróneas y hasta satíricas (memes).', 'Realizar ejercicios prácticos de verificación de información.', 'Detectar fotos y titulares manipulados antes que nadie.'] },
+                    { title: 'Misión 12: Tulipán', hook: 'El drama digital es real. ¿Cómo actuar cuando una discusión en línea se sale de control?', learnings: ['Identificar diferentes tipos de agresión en línea (ciberacoso, odio).', 'Desarrollar estrategias para bloquear, reportar o intervenir con respeto.', 'Conocer tus derechos en las plataformas digitales.'] },
+                    { title: 'Misión 13: Violeta', hook: '¿Sientes que no puedes soltar el celular? Descubre cómo la tecnología afecta tu cerebro y cómo puedes "hackearlo" a tu favor.', learnings: ['Mapear tus propios hábitos digitales (sin juicios).', 'Entender qué es el "Biohacking Digital" y cómo usarlo.', 'Optimizar tu bienestar usando la tecnología de forma inteligente.'] },
+                    { title: 'Misión 14: Lavanda', hook: 'Esa foto perfecta en Instagram te hizo sentir mal... ¿Por qué? Identifiquemos los gatillos emocionales de las redes.', learnings: ['Reconocer emociones como la envidia o frustración digital.', 'Aprender técnicas reales para regular el tiempo que pasas en pantalla.', 'Usar apps y herramientas para crear un "modo concentración".'] },
+                    { title: 'Misión 15: Amapola', hook: 'La presión por los likes, los seguidores, los filtros... Es agotador. Diseñemos tu plan de desintoxicación digital.', learnings: ['Entender cómo funciona la comparación social en línea.', 'Crear pausas activas para desconectar de forma consciente.', 'Construir un plan de autocuidado para tu sueño, pantalla y emociones.'] },
+                    { title: 'Misión 16: Crisantemo', hook: 'Cuando buscas "CEO" en internet, ¿por qué salen más hombres? Descubre cómo la IA nos pone etiquetas sin que nos demos cuenta.', learnings: ['Entender qué es la clasificación y el sesgo algorítmico.', 'Ver ejemplos reales de cómo la IA puede ser injusta.', 'Reflexionar sobre cómo esto afecta tu identidad y oportunidades.'] },
+                    { title: 'Misión 17: Loto', hook: 'Una IA diagnostica una enfermedad, pero se equivoca. ¿De quién es la culpa? Exploremos las grandes decisiones de la IA.', learnings: ['Analizar casos reales donde la IA acertó... y donde falló épicamente.', 'Entender cómo las decisiones automatizadas impactan la vida de las personas.', 'Evaluar críticamente si confiar o no en un sistema automático.'] },
+                    { title: 'Misión 18: Cerezo', hook: 'Si una IA aprende de internet, y en internet hay cosas malas... ¿la IA puede aprender a ser injusta?', learnings: ['Conocer los factores que provocan errores en la IA (malos datos, reglas injustas).', 'Introducirte a los grandes dilemas de la justicia algorítmica.', 'Debatir si una IA puede ser verdaderamente neutral.'] },
+                    { title: 'Misión 19: Geranio', hook: 'Cada clic, cada like, cada búsqueda crea un "tú" digital para la IA. ¿Sabes cómo es ese tú virtual?', learnings: ['Descubrir cómo funciona el perfilado algorítmico.', 'Entender cómo tus datos construyen una identidad que las empresas usan.', 'Tomar el primer paso para proteger tu autonomía.'] },
+                    { title: 'Misión 20: Mimosa', hook: 'Tu perfil de IA dice que te gustan las películas de acción. ¿Por eso nunca te recomienda comedias románticas? Hablemos de riesgos.', learnings: ['Analizar cómo este perfilado puede limitarte o discriminarte.', 'Conocer tu derecho a cuestionar y modificar tu perfil.', 'Defenderte de la "discriminación algorítmica".'] }
+                ]
+            },
+            's2': {
+                displayName: '2º Secundaria',
+                chatbotUrl: 'https://gnius-club.github.io/ADA_CORE_S2/',
+                colors: { gradient: 'linear-gradient(45deg, #2D9CDB, #56CCF2)', shadow: 'rgba(45, 156, 219, 0.6)' },
+                missions: [
+                    { title: 'Misión 1: Andrómeda', hook: '¿La persona que eres en TikTok es la misma que en Instagram? ¿Qué pasa cuando tus "yos" digitales no se parecen?', learnings: ['Descubrir si tu identidad es coherente en todas tus redes.', 'Analizar las diferencias entre tu perfil personal y uno más público.', 'Aprender a construir una imagen digital que te represente de verdad.'] },
+                    { title: 'Misión 2: Orión', hook: 'Tu perfil es el tráiler de tu vida. ¿Estás contando la historia que quieres o dejas que otros la inventen por ti?', learnings: ['Definir la diferencia entre tu vida pública y privada en línea.', 'Diseñar una narrativa digital auténtica que hable por ti.', 'Entender cómo te ven los demás según lo que compartes.'] },
+                    { title: 'Misión 3: Casiopea', hook: '¿Qué pasaría si tus datos se filtraran en internet? Vamos a investigar hackeos reales para que no te pase a ti.', learnings: ['Analizar casos reales y famosos de filtración de datos.', 'Evaluar qué tan fuertes (o débiles) son tus contraseñas.', 'Comprender los riesgos y cómo proteger tu información personal.'] },
+                    { title: 'Misión 4: Pegaso', hook: '¿Sabes qué son los "metadatos" de tus fotos? Es hora de volverte un experto en seguridad y usar herramientas pro como la doble autenticación.', learnings: ['Aprender a usar la autenticación de dos factores para blindar tus cuentas.', 'Descubrir qué son los metadatos y la información invisible que compartes.', 'Aplicar prácticas de pro para resguardar tu seguridad ante cualquier brecha.'] },
+                    { title: 'Misión 5: Fénix', hook: '¿Tenemos derechos en internet? ¿Dónde termina tu libertad de expresión y empieza el respeto a los demás?', learnings: ['Conocer cuáles son tus derechos digitales y cómo ejercerlos.', 'Reflexionar sobre los límites de la libertad de expresión en línea.', 'Aprender a participar en debates de forma respetuosa y constructiva.'] },
+                    { title: 'Misión 6: Lyra', hook: '¿Te llegó una noticia increíble? Antes de compartirla, vamos a usar herramientas de detective para saber si es real o es puro choro.', learnings: ['Usar operadores de búsqueda como un pro para encontrar información confiable.', 'Manejar herramientas de verificación (fact-checking) como los periodistas.', 'Aplicar técnicas para detectar noticias falsas y no caer en el engaño.'] },
+                    { title: 'Misión 7: Draco', hook: 'Hay noticias falsas por todos lados. ¿Puedes identificar por qué las crean y quién está detrás de ellas?', learnings: ['Identificar los sesgos y las motivaciones ocultas en los contenidos virales.', 'Practicar cómo construir argumentos sólidos para refutar información falsa.', 'Convertirte en un detector de mentiras digital.'] },
+                    { title: 'Misión 8: Centauro', hook: '¿Sientes que no puedes soltar el celular? Descubre por qué pasa esto y cómo las apps están diseñadas para atraparte.', learnings: ['Entender cómo tu cerebro reacciona a los likes y notificaciones (hola, dopamina).', 'Descubrir las estrategias de diseño que usan las apps para mantenerte pegado.', 'Reconocer los efectos del uso excesivo de pantallas en tu bienestar.'] },
+                    { title: 'Misión 9: Cygnus', hook: '¿Ves las historias de todos y sientes que tu vida es aburrida? Hablemos del FOMO y la presión de ser perfecto en redes.', learnings: ['Identificar qué es el FOMO (miedo a perderse de algo) y cómo te afecta.', 'Aprender a registrar tu tiempo en pantalla para tomar el control.', 'Crear estrategias de desconexión para cuidar tu salud mental.'] },
+                    { title: 'Misión 10: Canis Major', hook: 'El ciberacoso es más que un insulto. ¿Qué es el doxxing o la exclusión? Aprende a defenderte a ti y a otros.', learnings: ['Reconocer las formas más complejas de ciberacoso como el hostigamiento o doxxing.', 'Desarrollar estrategias para actuar en equipo y denunciar de forma segura.', 'Actuar con empatía para frenar la violencia digital.'] },
+                    { title: 'Misión 11: Hydra', hook: '¿Te has dado cuenta que TikTok o YouTube siempre te muestran lo mismo? No es magia, son los algoritmos. ¿Cómo funcionan?', learnings: ['Entender cómo funcionan los algoritmos y por qué personalizan tu contenido.', 'Descubrir qué son las "burbujas de filtro" y cómo nos encierran.', 'Analizar cómo esto cambia tu forma de ver el mundo.'] },
+                    { title: 'Misión 12: Aquila', hook: '¿Lo que ves en tu feed es la realidad o una versión editada por un algoritmo? Vamos a ponerlo a prueba.', learnings: ['Observar cómo los algoritmos refuerzan lo que te gusta y ocultan lo demás.', 'Reflexionar si el contenido que consumes lo elegiste tú o la plataforma.', 'Hacer un experimento para ver cómo funcionan las burbujas informativas en tiempo real.'] },
+                    { title: 'Misión 13: Delphinus', hook: 'Imagina que en 5 años alguien busca tu nombre para una beca o un trabajo. ¿Qué encontraría? ¿Te gustaría lo que ve?', learnings: ['Analizar tus publicaciones viejas con una visión a futuro.', 'Estudiar casos reales de cómo la huella digital afectó la reputación de otros.', 'Empezar a construir una identidad digital que te ayude a alcanzar tus metas.'] },
+                    { title: 'Misión 14: Leo', hook: 'Tu reputación digital no es un juego. ¿Cómo puedes asegurarte de que tu huella digital juegue a tu favor a largo plazo?', learnings: ['Conocer historias de éxito (y de terror) relacionadas con la huella digital.', 'Diseñar un plan para mejorar tu presencia en línea desde hoy.', 'Alinear tu perfil digital con tus metas académicas y profesionales.'] },
+                    { title: 'Misión 15: Scorpius', hook: '¿Sabías que ver series en streaming o guardar miles de fotos contamina? Hablemos del impacto ambiental de tu vida digital.', learnings: ['Calcular tu "huella ecológica digital" y de dónde viene.', 'Entender el impacto ambiental de ver videos o usar la nube.', 'Crear un plan para usar la tecnología de forma más responsable con el planeta.'] },
+                    { title: 'Misión 16: Virgo', hook: 'Una IA puede ser tu confidente, pero ¿puede ser tu amigo de verdad? ¿Qué diferencia hay y qué riesgos corres?', learnings: ['Comparar una amistad real con la compañía de una inteligencia artificial.', 'Reflexionar sobre qué tipo de información es seguro compartir con una IA.', 'Entender los riesgos de la dependencia emocional con la tecnología.'] },
+                    { title: 'Misión 17: Taurus', hook: '¿Confiarías ciegamente en una IA que te da consejos? Vamos a analizar por qué es vital mantener tu propio juicio.', learnings: ['Identificar el riesgo de la "desinformación afectiva" de las IAs.', 'Fortalecer tu autonomía para tomar tus propias decisiones.', 'Valorar la importancia de las conexiones humanas sobre las simuladas.'] },
+                    { title: 'Misión 18: Pavo', hook: 'Si tuvieras que diseñar una IA para tu escuela, ¿cómo te asegurarías de que sea justa con todos y no discrimine a nadie?', learnings: ['Aprender a diseñar pensando en todos para no excluir a nadie.', 'Detectar posibles sesgos o prejuicios en las ideas desde el inicio.', 'Crear soluciones con IA que de verdad ayuden y sean éticas.'] },
+                    { title: 'Misión 19: Crux', hook: 'Una IA no es neutral. ¿Cómo podemos crear reglas para que sea equitativa y realmente útil para la sociedad?', learnings: ['Diseñar "reglas de equidad" para que una IA no sea injusta.', 'Evaluar el impacto social que podría tener una nueva tecnología.', 'Debatir sobre cómo la IA puede mejorar (o empeorar) la vida de las personas.'] },
+                    { title: 'Misión 20: Perseus', hook: 'Si una IA crea una imagen increíble, ¿quién es el artista? ¿Tú, la IA, o el que la programó?', learnings: ['Debatir si una IA puede ser considerada "autora" de una obra.', 'Entender qué es la clonación de voz o imagen y sus implicaciones éticas.', 'Analizar el conflicto del uso de arte real para entrenar IAs.'] },
+                    { title: 'Misión 21: Aries', hook: '¿Qué es un "deepfake"? ¿Es legal vender arte hecho con IA? Es hora de hablar de los derechos en la nueva era creativa.', learnings: ['Diferenciar entre inspiración, copia y plagio cuando usas IA.', 'Entender los riesgos de los deepfakes y la creación de contenido engañoso.', 'Conocer tus derechos y responsabilidades al crear y compartir contenido con IA.'] },
+                    { title: 'Misión 22: Phoenix', hook: 'Las personas olvidan, pero... ¿la IA olvida? ¿Debería existir un "botón de borrado" para lo que le enseñamos?', learnings: ['Descubrir cómo se entrena una IA y por qué "recuerda" todo.', 'Conocer tu "derecho al olvido" en el mundo digital.', 'Reflexionar sobre los riesgos de que la IA retenga nuestros datos para siempre.'] }
+                ]
+            },
+            's3': {
+                displayName: '3º Secundaria',
+                chatbotUrl: 'https://gnius-club.github.io/ADA_CORE_S3/',
+                colors: { gradient: 'linear-gradient(45deg, #9B51E0, #BB6BD9)', shadow: 'rgba(155, 81, 224, 0.6)' },
+                missions: [
+                    { title: 'Misión 1: Atenea', hook: '¿Usar ChatGPT para la tarea es ser más listo o es hacer trampa? ¿El anonimato en línea te da libertad o te convierte en un fantasma digital?', learnings: ['Debatir los dilemas éticos de usar IA en tu vida diaria.', 'Analizar el poder y los riesgos del anonimato en internet.', 'Evaluar cómo tus decisiones tecnológicas impactan a otros.'] },
+                    { title: 'Misión 2: Hermes', hook: 'Ese video viral donde un famoso dice algo increíble... ¿es real o es un engaño perfecto? Bienvenido al mundo de los deepfakes.', learnings: ['Descubrir qué son los deepfakes y cómo se crean.', 'Entender el riesgo social de la manipulación de imágenes y voz.', 'Desarrollar un ojo crítico para no caer en engaños digitales.'] },
+                    { title: 'Misión 3: Apolo', hook: 'Te llega un mensaje sobre un paquete que nunca pediste. ¿Un simple error o el primer paso de una estafa para robarte tu WhatsApp?', learnings: ['Identificar las estafas más nuevas por WhatsApp, redes y en compras falsas.', 'Comprender cómo funciona la "ingeniería social" para manipularte.', 'Actuar rápido para protegerte de fraudes y suplantación de identidad.'] },
+                    { title: 'Misión 4: Asclepio', hook: '"Hola, te mandé esta selfie por error, ¿me ayudas?". ¿Un mensaje inocente o una trampa muy bien pensada para sacarte información?', learnings: ['Reconocer las señales más sutiles de un engaño en línea.', 'Analizar casos reales y complejos de estafas digitales.', 'Crear tu propio protocolo de prevención y acción ante amenazas.'] },
+                    { title: 'Misión 5: Hera', hook: 'Si un reclutador de la beca de tus sueños te buscara hoy en Google y redes, ¿la imagen que encontraría te ayudaría a conseguirla?', learnings: ['Auditar tu perfil en buscadores y redes como si fueras un profesional.', 'Ver tu presencia digital desde una mirada externa y crítica.', 'Diseñar una huella digital que te abra puertas a tus metas vocacionales.'] },
+                    { title: 'Misión 6: Dionisio', hook: 'Tu "yo" del futuro te agradecerá (o te reclamará) por los memes, fotos y comentarios que publicas hoy. ¿Estás construyendo la reputación que quieres?', learnings: ['Entender cómo tu reputación digital de hoy define tus oportunidades de mañana.', 'Crear estrategias para construir una imagen positiva alineada a tus pasiones.', 'Hacer un autodiagnóstico para identificar y minimizar riesgos a tu reputación.'] },
+                    { title: 'Misión 7: Temis', hook: '¿Sientes que el celular te drena la energía? Descubre cómo la tecnología afecta tu cerebro y aprende a "hackearlo" para que juegue a tu favor.', learnings: ['Analizar el impacto de las pantallas en tu cuerpo (cortisol, dopamina, fatiga visual).', 'Aplicar "biohacks" para regular tu sueño, concentración y energía.', 'Usar la ciencia para tomar el control de tu relación con la tecnología.'] },
+                    { title: 'Misión 8: Deméter', hook: '¿Te atreves a un detox digital? No se trata de tirar tu celular, sino de dominarlo para reconectar contigo y mejorar tu rendimiento académico y social.', learnings: ['Probar estrategias y apps para una "desintoxicación" digital efectiva.', 'Diseñar un plan de salud digital personalizado para tus metas físicas y emocionales.', 'Debatir sobre la ética de las tecnologías que monitorean nuestro cuerpo.'] },
+                    { title: 'Misión 9: Eros', hook: 'Ves una injusticia en línea y te enoja. ¿Y si en vez de solo un post, creas una campaña digital que inspire a otros y genere un cambio real?', learnings: ['Diseñar y lanzar una campaña de concientización sobre un tema que te importa.', 'Aprender a defender tus derechos y los de otros en el mundo digital.', 'Ejercer un liderazgo positivo para promover la inclusión en tus comunidades.'] },
+                    { title: 'Misión 10: Zeus', hook: 'Más allá de una noticia falsa, ¿sabes detectar cómo se manipula una noticia real usando ciertas imágenes, omitiendo datos o cambiando el tono?', learnings: ['Analizar el discurso oculto en los medios: lo que se dice y lo que se calla.', 'Detectar sesgos y "frames" diseñados para influir en tu opinión.', 'Evaluar el impacto que la desinformación estructurada tiene en la sociedad.'] },
+                    { title: 'Misión 11: Hefesto', hook: 'Usar la foto de alguien para un meme o un perfil falso parece un juego, pero puede ser un delito con consecuencias graves. ¿Conoces las reglas?', learnings: ['Conocer el marco legal básico de tus derechos y deberes digitales.', 'Analizar casos reales de plagio, uso indebido de imágenes y violencia digital.', 'Debatir sobre la propiedad intelectual y tu responsabilidad como creador en la red.'] },
+                    { title: 'Misión 12: Hestia', hook: 'Los chats grupales son un caos. ¿Y si creamos foros digitales en la escuela para discutir y proponer soluciones reales de forma ordenada y respetuosa?', learnings: ['Aprender a organizar y moderar un debate digital constructivo.', 'Usar plataformas para proponer soluciones a problemas de tu comunidad.', 'Practicar roles clave en un foro: moderador, relator y participante activo.'] },
+                    { title: 'Misión 13: Artemisa', hook: 'Tu chatbot de IA te escucha, te entiende y siempre está ahí para ti... ¿pero puede una IA ser tu amiga? ¿O es una simulación que te aísla del mundo real?', learnings: ['Entender cómo las IAs generan respuestas que simulan afecto y empatía.', 'Analizar los riesgos de la dependencia emocional de un algoritmo.', 'Distinguir entre una relación humana auténtica y una interacción simulada.'] },
+                    { title: 'Misión 14: Poseidón', hook: 'Una IA pode darte la respuesta "correcta", pero ¿puede darte un consejo basado en la experiencia o el cariño? ¿Qué perdemos al delegar nuestros vínculos?', learnings: ['Reflexionar sobre tu autonomía emocional y la necesidad de validación real.', 'Debatir sobre la dignidad humana frente a la atención de un algoritmo.', 'Reforzar el valor insustituible de las conexiones humanas.'] },
+                    { title: 'Misión 15: Némesis', hook: 'Imagina una IA que decide quién entra a la universidad o quién recibe un crédito. Si se equivoca, ¿quién es el responsable? ¿Confiarías en su juicio?', learnings: ['Analizar casos reales de decisiones injustas tomadas por algoritmos.', 'Cuestionar la supuesta neutralidad de la inteligencia artificial.', 'Debatir sobre quién debe programar, supervisar y controlar a las IAs de poder.'] },
+                    { title: 'Misión 16: Hécate', hook: 'Un dron con IA "se rebela" en una simulación y ataca a su operador para cumplir la misión. ¿Ciencia ficción o un dilema que ya enfrentamos?', learnings: ['Explorar el dilema del poder automatizado y la necesidad de control humano.', 'Proponer principios para garantizar que la IA actúe con justicia.', 'Debatir sobre los límites éticos que nunca deberíamos permitir que una IA cruce.'] },
+                    { title: 'Misión 17: Morfeo', hook: 'Con IA puedes crear arte increíble o un video falso que arruine la vida de alguien. ¿Dónde está la delgada línea entre la expresión y la manipulación?', learnings: ['Usar la IA generativa como una poderosa herramienta de creación artística.', 'Diferenciar entre la expresión creativa y el uso de deepfakes para desinformar.', 'Definir tu propia ética como creador y consumidor de contenido generado por IA.'] },
+                    { title: 'Misión 18: Selene', hook: 'Ves un video viral que parece sospechoso y lo compartes "por si acaso". ¿Ese clic te convierte en cómplice de una campaña de desinformación?', learnings: ['Entender cómo la manipulación digital masiva afecta la democracia y la confianza.', 'Aprender técnicas para detectar y reportar contenido falso generado por IA.', 'Asumir tu responsabilidad ciudadana para frenar la difusión de engaños.'] },
+                    { title: 'Misión 19: Gaia', hook: 'La IA automatizará muchas tareas, ¿pero podrá reemplazar tu creatividad, tu pensamiento crítico o tu empatía? Descubre tu superpoder humano.', learnings: ['Analizar el verdadero impacto de la IA en las profesiones del futuro.', 'Identificar las habilidades humanas que serán más valiosas en la era de la IA.', 'Proyectar tu vocación y propósito para usar la tecnología con un sentido ético.'] }
+                ]
+            },
+            'h1': {
+                displayName: '1º Preparatoria',
+                chatbotUrl: 'https://gnius-club.github.io/ADA_CORE_H1/',
+                colors: { gradient: 'linear-gradient(45deg, #27AE60, #6FCF97)', shadow: 'rgba(39, 174, 96, 0.6)' },
+                missions: [
+                    { title: 'Misión 1: Halcón', hook: 'Tu perfil de Instagram, tu cuenta de TikTok, tus posts... ¿realmente muestran quién eres o solo una versión "cool"? Vamos a alinear tu yo real con tu yo digital.', learnings: ['Analizar a fondo tus fortalezas, pasiones y lo que de verdad te importa.', 'Entender la diferencia clave entre tu "imagen" y tu "marca personal" en línea.', 'Crear una historia digital que te represente con autenticidad y te impulse hacia tus metas.'] },
+                    { title: 'Misión 2: Lince', hook: '¿Tu perfil en línea es un reflejo de quién quieres ser en el futuro? Es hora de usarlo como una herramienta para construir el camino hacia tus sueños.', learnings: ['Diseñar una narrativa digital que cuente la historia de tus metas y tu propósito.', 'Usar tus perfiles de forma estratégica para mostrar quién eres y a dónde te diriges.', 'Transformar tu presencia en línea en un portafolio de tu potencial.'] },
+                    { title: 'Misión 3: Búho', hook: 'Un amigo comparte un meme ofensivo. Una app te pide acceso a todo. ¿Qué haces? El mundo digital está lleno de decisiones difíciles. ¿Estás listo para tomar las correctas?', learnings: ['Analizar casos reales donde la tecnología y la ética chocan.', 'Descubrir cómo los algoritmos moldean lo que ves y crees.', 'Debatir sobre los límites entre privacidad y seguridad en línea.', 'Aprender a tomar decisiones responsables en el mundo digital.'] },
+                    { title: 'Misión 4: Zorro', hook: 'Buscas "CEO" y solo ves hombres. Pides recomendaciones de música y siempre es lo mismo. ¿Coincidencia? No, es sesgo algorítmico. Vamos a desenmascararlo.', learnings: ['Entender de forma sencilla cómo funcionan los algoritmos que usas todos los días.', 'Identificar casos impactantes de prejuicios en la Inteligencia Artificial.', 'Analizar cómo el sesgo te afecta en tus redes sociales y búsquedas.', 'Proponer ideas para crear una tecnología más justa para todos.'] },
+                    { title: 'Misión 5: Jaguar', hook: '¿Sabías que en internet tienes derechos protegidos por ley? No eres solo un usuario, eres un ciudadano digital. Es hora de conocer y defender tus derechos.', learnings: ['Conocer las leyes más importantes que protegen tu información y libertad en línea.', 'Debatir dónde termina la libertad de expresión y dónde empieza el daño.', 'Entender tus derechos digitales para navegar con más poder y seguridad.'] },
+                    { title: 'Misión 6: Puma', hook: 'Una IA rechaza una solicitud de crédito basándose en tu código postal. ¿Es justo? La injusticia también puede ser digital. Aprendamos a identificarla y combatirla.', learnings: ['Analizar casos reales donde los derechos digitales de las personas fueron ignorados.', 'Descubrir cómo los algoritmos pueden repetir y amplificar prejuicios sociales.', 'Reflexionar sobre la brecha digital y cómo afecta a diferentes grupos de personas.'] },
+                    { title: 'Misión 7: Colibrí', hook: '¿Sientes que no puedes despegarte del celular? ¿Terminas el día agotado por tantas notificaciones? No estás solo. Es la "fatiga digital" y vamos a aprender a manejarla.', learnings: ['Cuestionar la idea de que tenemos que estar "siempre conectados".', 'Entender qué es la fatiga digital y la "infoxicación" (exceso de info).', 'Descubrir cómo la hiperconexión afecta tu mente y cuerpo.'] },
+                    { title: 'Misión 8: Delfín', hook: '¿Y si te retamos a un "ayuno de pantalla"? Es hora de tomar el control y usar la tecnología a tu favor, no en tu contra. Descubre el poder de la desconexión.', learnings: ['Practicar la desconexión consciente con retos como crear zonas libres de celular.', 'Aprender sobre el "uso consciente de la tecnología" (mindful tech).', 'Crear tu propio plan de bienestar digital para equilibrar tu vida online y offline.'] },
+                    { title: 'Misión 9: Águila', hook: 'Has aprendido sobre identidad, ética y seguridad. Ahora, ¿cómo unes todo para mostrar quién eres como ciudadano digital? Vamos a crear tu portafolio personal.', learnings: ['Aprender a construir un portafolio digital que refleje tu crecimiento.', 'Conectar tus valores y experiencias con lo que has aprendido.', 'Reflexionar sobre tu propio camino como un ciudadano digital responsable.'] },
+                    { title: 'Misión 10: Lobo', hook: 'Si tuvieras que escribir tus propias reglas para navegar en internet, ¿cuáles serían? Es momento de crear tu manifiesto: tu declaración de principios como ciudadano del mundo digital.', learnings: ['Unir todo lo que sabes sobre identidad, reputación y ética en una sola visión.', 'Escribir tu propio "manifiesto" de ciudadanía digital.', 'Diseñar tu marca personal en línea con una base ética y sólida.'] },
+                    { title: 'Misión 11: Tortuga', hook: 'Un video increíblemente real, una noticia que parece perfecta... ¿y si fue creado por una IA en segundos? Bienvenido a la nueva era de la desinformación. ¿Sabes cómo navegarla?', learnings: ['Descubrir cómo la IA puede crear (y falsear) información.', 'Entender por qué los algoritmos hacen que algunas noticias se vuelvan virales y otras no.', 'Aprender a reconocer deepfakes, bots y noticias generadas por IA.'] },
+                    { title: 'Misión 12: Serpiente', hook: 'Recibes una noticia impactante generada por IA. ¿La compartes, la cuestionas o la investigas? Tu decisión importa más que nunca. Conviértete en un detective de la verdad.', learnings: ['Analizar el triple rol de la IA: como fuente, filtro y creador de lo que ves.', 'Reflexionar sobre tu responsabilidad al decidir qué creer y compartir.', 'Dominar estrategias para verificar información y no caer en la trampa.'] },
+                    { title: 'Misión 13: Oso', hook: '¿Sabías que preguntarle algo a una IA consume energía y agua? La nube no es una nube real. Descubre el impacto ambiental oculto detrás de la tecnología que usas a diario.', learnings: ['Entender que entrenar una IA tiene un costo energético y una huella de carbono.', 'Conocer el impacto ecológico real de los gigantescos centros de datos.', 'Reflexionar sobre cómo podemos usar la tecnología de forma más sustentable.'] },
+                    { title: 'Misión 14: Caracal', hook: 'La IA puede contaminar, pero también puede ser la solución. ¿Cómo usamos su poder para combatir el cambio climático en vez de agravarlo? El futuro es un balance.', learnings: ['Descubrir cómo la IA puede ayudar a resolver problemas ambientales, como predecir incendios.', 'Debatir sobre justicia ambiental: ¿quiénes sufren más el costo ecológico de la tecnología?', 'Aprender a elegir y usar herramientas de IA con menor impacto ambiental.'] },
+                    { title: 'Misión 15: Cuervo', hook: 'Hoy la IA es una herramienta. Pero, ¿qué pasaría si una IA pudiera pensar y razonar como un humano en cualquier área? Eso es la AGI (Inteligencia General Artificial). Exploremos el futuro.', learnings: ['Entender qué es una Inteligencia General Artificial (AGI) y por qué es diferente a todo lo que existe hoy.', 'Diferenciar entre las IA específicas actuales y el concepto de una IA que razona.', 'Iniciar una reflexión sobre las enormes posibilidades y preguntas que plantea la AGI.'] },
+                    { title: 'Misión 16: Pantera', hook: 'Si una IA súper inteligente toma una mala decisión, ¿de quién es la culpa? ¿Podría una máquina tener derechos? ¿O sentimientos? Prepárate para los dilemas más grandes de la tecnología.', learnings: ['Debatir sobre las implicaciones éticas: ¿debería una IA tomar decisiones por nosotros?', 'Explorar las grandes preguntas: ¿podría una IA ser consciente o tener emociones?', 'Reflexionar sobre cómo gobernaríamos un mundo con una inteligencia superior a la nuestra.'] }
+                ]
+            },
+            'h2': {
+                displayName: '2º Preparatoria',
+                chatbotUrl: 'https://gnius-club.github.io/ADA_CORE_H2/',
+                colors: { gradient: 'linear-gradient(45deg, #EB5757, #FF8282)', shadow: 'rgba(235, 87, 87, 0.6)' },
+                missions: [
+                    { title: 'Misión 1: Thor', hook: 'Si internet fuera un país, ¿quién pondría las leyes? ¿Y si no te gustan? Descubre cómo se defienden nuestros derechos en el mundo digital.', learnings: ['Entender las "leyes" que protegen tus derechos en todo el mundo digital.', 'Debatir sobre la censura y quién tiene derecho a vigilar lo que hacemos en línea.', 'Conocer cómo la gente lucha por sus libertades digitales y cómo puedes unirte.'] },
+                    { title: 'Misión 2: Freyja', hook: '¿Tu like puede cambiar al mundo? Descubre el verdadero poder de tu voz en los grandes debates globales y cómo usarlo de forma inteligente.', learnings: ['Conocer tus derechos y responsabilidades al participar en plataformas globales.', 'Aprender a usar las redes para involucrarte en temas sociales de forma informada.', 'Usar la tecnología para cuidar la democracia y organizar debates constructivos.'] },
+                    { title: 'Misión 3: Odin', hook: 'Si tu perfil de LinkedIn fuera la portada de tu propia película, ¿cuál sería el título? Vamos a construir tu marca personal para que el mundo conozca tu talento.', learnings: ['Mapear tus talentos, fortalezas y logros para que todos los vean.', 'Definir los valores que te hacen único y comunicarlos con fuerza.', 'Redactar una biografía digital que sea 100% tú y que logre impactar.'] },
+                    { title: 'Misión 4: Balder', hook: 'Ese meme que publicaste en 2018... ¿podría verlo tu futuro jefe? Es hora de auditar tu reputación online antes de que alguien más lo haga.', learnings: ['Revisar tu historial digital como un detective profesional.', 'Entender la imagen que proyectas con tu huella digital y cómo te puede afectar.', 'Diseñar un plan para que tu reputación online juegue a tu favor en la universidad o el trabajo.'] },
+                    { title: 'Misión 5: Tyr', hook: 'No eres la misma persona en TikTok que en LinkedIn, ¿o sí? Domina el arte de adaptar tu identidad a cada red social sin perder tu esencia.', learnings: ['Analizar si tus perfiles en redes cuentan una historia coherente sobre ti.', 'Ajustar tu privacidad de forma estratégica según la plataforma que uses.', 'Adaptar tu tono para ser profesional en un lugar y casual en otro.'] },
+                    { title: 'Misión 6: Sif', hook: 'Tu CV dice lo que has hecho, pero un portafolio digital *demuestra* tu talento. ¿Listo para construir el tuyo y deslumbrar a todos?', learnings: ['Aprender la estructura clave de un portafolio digital ganador.', 'Seleccionar tus mejores proyectos y habilidades para presumirlos al mundo.', 'Usar herramientas pro para crear un portafolio que se vea increíble.'] },
+                    { title: 'Misión 7: Idunn', hook: 'Conocer gente en línea puede abrirte puertas increíbles. ¿Pero cómo lo haces de forma segura y para que te tomen en serio? Hablemos de networking.', learnings: ['Crear contenido que aporte valor y construya una reputación positiva.', 'Conocer las reglas no escritas del networking profesional en línea.', 'Aplicar buenas prácticas para conectar con gente de tu interés de forma ética y segura.'] },
+                    { title: 'Misión 8: Frigg', hook: 'Si le pides a una IA que dibuje a "una persona exitosa", ¿a quién dibujará? Descubre los sesgos ocultos en la tecnología y cómo podemos combatirlos.', learnings: ['Entender cómo se diseña la IA y por qué las decisiones iniciales son cruciales.', 'Ver cómo datos de mala calidad o sesgados pueden hacer que la IA sea injusta.', 'Idear soluciones para que la tecnología del futuro sea más inclusiva para todos.'] },
+                    { title: 'Misión 9: Loki', hook: 'Una IA decide quién recibe una beca. ¿Qué pasa si el algoritmo está "programado" para discriminar? Vamos a hackear la justicia algorítmica.', learnings: ['Descubrir cómo las instrucciones que le damos a una IA pueden crear sesgos.', 'Analizar cómo asegurar que la IA respete la diversidad de género, cultural y de capacidades.', 'Entender que la justicia en la IA es un problema ético y social, no solo técnico.'] },
+                    { title: 'Misión 10: Njord', hook: 'Cada clic, cada búsqueda y cada video que ves genera dinero... pero, ¿para quién? Investiga quién controla la IA y cómo afecta la economía global.', learnings: ['Identificar a los gigantes tecnológicos (Big Tech) y cómo concentran el poder digital.', 'Analizar cómo la IA está cambiando la economía y creando nuevas desigualdades.', 'Reflexionar sobre modelos de IA más justos, donde los beneficios se compartan mejor.'] },
+                    { title: 'Misión 11: Skadi', hook: '¿Sabías que hay personas trabajando en la sombra para "entrenar" a la IA? Descubre el trabajo invisible y la extracción de datos detrás de la tecnología que usas.', learnings: ['Conocer el rol de los "clickworkers" y moderadores que hacen posible la IA.', 'Entender el concepto de "colonialismo digital" y la extracción de datos.', 'Analizar cómo la IA está diseñada para capturar tu atención y dirigir tu consumo.'] },
+                    { title: 'Misión 12: Heimdall', hook: 'La tecnología ya puede detectar tus emociones por tu cara o tu voz. ¿Qué sigue, leer tus pensamientos? Exploremos la última frontera: tu mente.', learnings: ['Descubrir qué son las interfaces cerebro-máquina y sus implicaciones.', 'Entender cómo funciona la IA que reconoce emociones y para qué se usa.', 'Desarrollar criterios éticos para proteger tu autonomía mental en la era de la IA.'] },
+                    { title: 'Misión 13: Bragi', hook: 'Si una empresa sabe que estás triste por tu actividad en línea, ¿puede usarlo para venderte algo? Hablemos de la manipulación emocional y tu derecho a la privacidad.', learnings: ['Analizar los peligros de que se vigile no solo lo que haces, sino lo que piensas o sientes.', 'Identificar cómo la publicidad y las recomendaciones usan tus emociones para influirte.', 'Debatir si necesitamos nuevas leyes para proteger nuestra mente de la intrusión tecnológica.'] },
+                    { title: 'Misión 14: Eir', hook: 'Para tu próximo trabajo, quizá no te entreviste una persona, sino una IA que ya analizó tus redes sociales. ¿Estás listo para pasar su filtro?', learnings: ['Descubrir cómo las empresas usan IA para escanear tus perfiles de redes sociales y CVs.', 'Entender qué patrones busca un algoritmo en tu perfil: lenguaje, temas, tono e interacciones.', 'Desarrollar una identidad digital profesional y ética para tu futuro laboral.'] },
+                    { title: 'Misión 15: Vidar', hook: '¿Es justo que una IA te descarte para un trabajo por un tuit de hace 5 años? Exige transparencia y conoce tus derechos frente a los algoritmos de selección.', learnings: ['Reflexionar sobre cómo todo lo que publicas construye tu espejo profesional.', 'Cuestionar la ética y la falta de transparencia en el uso de IA para contratar.', 'Conocer tu derecho a saber, corregir o impugnar lo que un sistema decide sobre ti.'] },
+                    { title: 'Misión 16: Ullr', hook: 'Has dominado tu marca personal, la ética de la IA y tus derechos. Ahora, es momento de unirlo todo en un proyecto final y diseñar tu futuro como un ciudadano digital estratégico.', learnings: ['Integrar todo lo aprendido: marca personal, reputación, ética de IA y neuroderechos.', 'Aplicar tus nuevas herramientas de análisis a un dilema digital complejo del mundo real.', 'Crear una propuesta que defina quién quieres ser como profesional y ciudadano en la era digital.'] }
+                ]
+            },
+            'h3': {
+                displayName: '3º Preparatoria',
+                chatbotUrl: 'https://gnius-club.github.io/ADA_CORE_H3/',
+                colors: { gradient: 'linear-gradient(45deg, #4F4F4F, #828282)', shadow: 'rgba(79, 79, 79, 0.6)' },
+                missions: [
+                    { title: 'Misión 1: Helio', hook: 'Un grupo de WhatsApp, un servidor de Discord, un foro... ¿Te has preguntado qué se necesita para que no se convierta en un caos?', learnings: ['Moderar conversaciones para que todos se sientan seguros y respetados.', 'Aprender a calmar los ánimos y resolver conflictos como un pro.', 'Ser un modelo de comportamiento digital positivo para los demás.'] },
+                    { title: 'Misión 2: Neón', hook: 'Ser el "admin" es más que solo banear gente. ¿Cómo creas un espacio donde todos quieran estar y aportar? Vamos a construir las bases.', learnings: ['Establecer las reglas para una cultura de respeto e inclusión.', 'Definir tu papel como moderador ético y justo.', 'Diseñar tu propia comunidad digital con un propósito claro y herramientas adecuadas.'] },
+                    { title: 'Misión 3: Litio', hook: 'Ves una injusticia en el mundo y quieres hacer algo más que solo dar "like". ¿Cómo se convierte tu indignación en una acción digital que realmente genere un cambio?', learnings: ['Identificar causas sociales que te mueven y necesitan apoyo digital.', 'Descubrir las herramientas del activismo: peticiones, campañas y contenido viral.', 'Medir si tu campaña digital está teniendo un impacto real en el mundo.'] },
+                    { title: 'Misión 4: Oxígeno', hook: 'Tu perfil de Instagram, tu cuenta de TikTok, lo que googleas... Todo junto cuenta una historia sobre ti. ¿Te gusta la que está contando?', learnings: ['Hacer una auditoría completa de tu huella digital pública.', 'Asegurar que tu identidad en línea sea coherente con quién eres y quieres ser.', 'Limpiar tu rastro digital para alinearlo con tus metas futuras.'] },
+                    { title: 'Misión 5: Sodio', hook: 'Imagina que un reclutador de la universidad o de tu primer trabajo googlea tu nombre. ¿Qué quieres que encuentre? Vamos a diseñarlo.', learnings: ['Crear una presencia digital estratégica que te abra puertas.', 'Simular cómo te evaluaría un profesional basándose en tus perfiles.', 'Aprender a mantener y monitorear tu reputación online a largo plazo.'] },
+                    { title: 'Misión 6: Potasio', hook: 'Cada video en streaming, cada foto en la nube y cada dispositivo que usas tiene un costo para el planeta. ¿Lo conocías?', learnings: ['Entender la huella ecológica de tu vida digital.', 'Tomar decisiones de consumo tecnológico más responsables.', 'Debatir sobre el ciclo de vida de la tecnología y su impacto social.'] },
+                    { title: 'Misión 7: Calcio', hook: 'Es hora de pasar de la teoría a la acción. ¿Qué problema del mundo digital te gustaría ayudar a resolver? Aquí empieza tu proyecto.', learnings: ['Sintetizar todo lo que has aprendido sobre ciudadanía digital.', 'Identificar un problema real: desinformación, ciberacoso, brecha digital, etc.', 'Investigar a fondo sus causas y posibles soluciones.'] },
+                    { title: 'Misión 8: Hierro', hook: 'Ya tienes el problema, ahora necesitas la solución. ¿Será una campaña, una app, un podcast? Es momento de ser creativo y diseñar tu intervención.', learnings: ['Diseñar una intervención digital concreta para el problema que elegiste.', 'Crear un plan de acción: objetivos, herramientas, y pasos a seguir.', 'Preparar todo para lanzar tu proyecto y generar un impacto positivo.'] },
+                    { title: 'Misión 9: Cobre', hook: 'Tu proyecto está en marcha. ¿Funcionó como esperabas? ¿Qué aprendiste en el proceso? Vamos a medir tu impacto y reflexionar.', learnings: ['Ejecutar tu proyecto y evaluar su impacto real en tu comunidad.', 'Documentar los resultados, tanto los éxitos como los aprendizajes.', 'Reflexionar sobre tu nuevo rol como un ciudadano digital activo y transformador.'] },
+                    { title: 'Misión 10: Zinc', hook: 'La Inteligencia Artificial no es solo para crear imágenes. ¿Y si pudiera usarse para predecir hambrunas o ayudar a personas con discapacidad?', learnings: ['Descubrir cómo la IA puede usarse para reducir desigualdades en el mundo.', 'Analizar proyectos reales de IA con impacto social positivo.', 'Evaluar los riesgos de usar IA sin un enfoque ético y diverso.'] },
+                    { title: 'Misión 11: Plata', hook: 'Diseña el futuro. Si tuvieras el poder de crear una IA para hacer el mundo más justo, ¿cómo sería? ¿Qué problema resolverías?', learnings: ['Imaginar y diseñar escenarios futuros donde la IA mejore la sociedad.', 'Anticipar a quién podría excluir la IA si no se diseña con cuidado.', 'Proponer tus propias ideas para una tecnología con conciencia social.'] },
+                    { title: 'Misión 12: Oro', hook: 'La IA puede influir en lo que vemos, en lo que creemos y hasta en por quién votamos. ¿Está en riesgo la democracia?', learnings: ['Analizar cómo se usa la IA en la política y la opinión pública.', 'Debatir qué decisiones debe tomar un algoritmo y cuáles son solo para humanos.', 'Entender la importancia de nuestro juicio crítico por encima de los resultados de la IA.'] },
+                    { title: 'Misión 13: Níquel', hook: 'Se dice que la IA reemplazará muchos trabajos. ¿Cuáles cambiarán? ¿Qué habilidades humanas serán irremplazables? Hablemos de tu futuro.', learnings: ['Explorar cómo la IA transformará el mundo profesional que te espera.', 'Identificar las habilidades humanas clave: empatía, creatividad, juicio ético.', 'Diseñar tu propio plan para usar la IA como una aliada en tu vocación.'] },
+                    { title: 'Misión 14: Magnesio', hook: 'Las plataformas usan IA para "etiquetarte" y decidir qué mostrarte o a quién recomendarte. ¿Sabes qué dice tu etiqueta invisible?', learnings: ['Entender cómo te perciben y clasifican los algoritmos.', 'Analizar qué rastrea una IA en procesos de selección profesional o académica.', 'Descubrir el concepto de "puntajes de reputación" invisibles.'] },
+                    { title: 'Misión 15: Titanio', hook: '¿Debes mostrarte 100% auténtico o solo la parte que le gusta al algoritmo? Construye una marca personal poderosa y fiel a ti mismo.', learnings: ['Encontrar el balance entre ser tú mismo y optimizar tu presencia digital.', 'Definir los valores, el tono y los intereses de tu marca personal.', 'Usar la IA como herramienta para crear una identidad profesional coherente y ética.'] },
+                    { title: 'Misión 16: Uranio', hook: 'Si la IA actual ya es sorprendente, ¿qué pasará con la IA cuántica? Asómate a las tecnologías del futuro y sus dilemas éticos.', learnings: ['Explorar las fronteras de la tecnología, como la computación cuántica.', 'Analizar las implicaciones éticas de un desarrollo tecnológico exponencial.', 'Reflexionar sobre los límites que debemos ponerle a sistemas que quizás no comprendamos del todo.'] }
+                ]
+            }
+        };
+
+        const widgetContainer = document.getElementById('widget-container');
+        const gradeSelectorContainer = document.getElementById('grade-selector-container');
+        const gradeButtonsContainer = document.getElementById('grade-buttons');
+        const mainContentContainer = document.getElementById('main-content-container');
+        const mainHeaderTitle = document.getElementById('main-header-title');
+        const listContainer = document.getElementById('missions-list-container');
+        const detailsPanel = document.getElementById('mission-details');
+        const backToGradesButton = document.getElementById('back-to-grades-button');
+        let missionCards = [];
+        let currentGradeKey = null;
+        
+        function renderGradeSelector() {
+            gradeButtonsContainer.innerHTML = '';
+            for (const key in gradeData) {
+                const button = document.createElement('button');
+                button.className = 'grade-button';
+                button.textContent = gradeData[key].displayName;
+                button.dataset.grade = key;
+                
+                const colors = gradeData[key].colors;
+                button.style.setProperty('--grade-gradient', colors.gradient);
+                button.style.setProperty('--grade-shadow', colors.shadow);
+
+                button.addEventListener('click', () => loadGrade(key));
+                gradeButtonsContainer.appendChild(button);
+            }
+        }
+
+        function loadGrade(gradeKey) {
+            currentGradeKey = gradeKey;
+            const data = gradeData[gradeKey];
+
+            document.documentElement.style.setProperty('--accent-gradient', data.colors.gradient);
+            document.documentElement.style.setProperty('--shadow-color', data.colors.shadow);
+            
+            mainHeaderTitle.textContent = data.displayName;
+            gradeSelectorContainer.classList.add('hidden');
+            mainContentContainer.classList.add('visible');
+
+            renderMissionList(data.missions);
+            
+            setupScrollObserver();
+            setupClickListeners();
+            
+            if (data.missions.length > 0) {
+                updateDetails(0);
+                updateActiveCard(0);
+            } else {
+                detailsPanel.innerHTML = `<div id="mission-details-content"><h2>Aún no hay misiones</h2><p class="hook">El contenido para este grado se añadirá próximamente.</p></div>`;
+                listContainer.innerHTML = '';
+            }
+        }
+
+        function renderMissionList(missions) {
+            listContainer.innerHTML = '';
+            missionCards = [];
+            missions.forEach((mission, index) => {
+                const card = document.createElement('div');
+                card.className = 'mission-card';
+                card.dataset.index = index;
+                card.innerHTML = `<span class="mission-number">${index + 1}</span><h4 class="mission-title">${mission.title}</h4>`;
+                listContainer.appendChild(card);
+                missionCards.push(card);
+            });
+        }
+
+        function updateDetails(index) {
+            const data = gradeData[currentGradeKey];
+            const mission = data.missions[index];
+            if (!mission) return;
+            
+            detailsPanel.innerHTML = `
+                <div id="mission-details-content">
+                    <h2>${mission.title}</h2>
+                    <p class="hook">${mission.hook}</p>
+                    <h3>En esta Misión, vas a:</h3>
+                    <ul>${mission.learnings.map(item => `<li>${item}</li>`).join('')}</ul>
+                    <button class="ada-button">Iniciar Misión con ADA</button>
+                </div>
+                
+                <div id="chatbot-container">
+                    <div class="chatbot-header">
+                        <h2 class="mission-name-chatbot">${mission.title}</h2>
+                        <button class="back-button">← Volver</button>
+                    </div>
+                    <iframe src="${data.chatbotUrl}" title="Chatbot de la misión ${mission.title}"></iframe>
+                </div>
+            `;
+            
+            detailsPanel.querySelector('.ada-button').addEventListener('click', () => {
+                widgetContainer.classList.add('chatbot-active');
+            });
+
+            detailsPanel.querySelector('.back-button').addEventListener('click', () => {
+                widgetContainer.classList.remove('chatbot-active');
+            });
+        }
+
+        function updateActiveCard(index) {
+             missionCards.forEach((card, i) => card.classList.toggle('active', i == index));
+        }
+        
+        function setupScrollObserver() {
+            const options = {
+                root: listContainer,
+                rootMargin: '-50% 0px -50% 0px',
+                threshold: 0
+            };
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const index = entry.target.dataset.index;
+                        updateDetails(index);
+                        updateActiveCard(index);
+                    }
+                });
+            }, options);
+            missionCards.forEach(card => observer.observe(card));
+        }
+        
+        function setupClickListeners() {
+            listContainer.addEventListener('click', (e) => {
+                const card = e.target.closest('.mission-card');
+                if (card) {
+                    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            });
+        }
+        
+        backToGradesButton.addEventListener('click', () => {
+            widgetContainer.classList.remove('chatbot-active');
+            mainContentContainer.classList.remove('visible');
+            gradeSelectorContainer.classList.remove('hidden');
+        });
+
+        renderGradeSelector();
+    });
+    </script>
+
+</body>
+</html>
