@@ -212,7 +212,7 @@
             max-width: 700px;
             height: 85vh;
             max-height: 800px;
-            box-shadow: 0 0 50px -10px var(--shadow-color);
+            box-shadow: 0 0 50px -10px var(--shadow-color); /* EFECTO GLOW */
         }
         #widget-container.chatbot-active #main-header {
             height: 0;
@@ -349,7 +349,7 @@
                     { title: 'Misión 4: Azucena', hook: '¿Y si te dijéramos que puedes controlar lo que internet sabe de ti? Es hora de tomar el poder.', learnings: ['Crear un plan de acción para proteger tu privacidad.', 'Prevenir riesgos antes de que ocurran.', 'Decidir conscientemente qué tan visible quieres ser.'] },
                     { title: 'Misión 5: Dalia', hook: '¿Realmente esa app necesita acceso a tu micrófono? Vamos a hackear tu seguridad digital.', learnings: ['Descubrir qué permisos tienen tus apps y por qué.', 'Crear contraseñas que sean (casi) imposibles de adivinar.', 'Corregir hábitos que ponen en riesgo tu información.'] },
                     { title: 'Misión 6: Gardenia', hook: '¿Público, privado, amigos de amigos? Domina los ajustes de privacidad de tus redes como un experto.', learnings: ['Controlar quién ve, comenta o te etiqueta en tus posts.', 'Configurar tus cuentas para máxima seguridad.', 'Usar herramientas de bloqueo y denuncia de forma efectiva.'] },
-                    { title: 'Misión 7: Hortensia', hook: '¿Ese formulario para un juego online te pide demasiados datos? Aprende a detectar las banderas rojas.', learnings: ['Diferenciar entre datos públicos, privados y súper sensibles.', 'Decidir con seguridad cuándo es buena idea compartir información.', 'Reconocer formularios y sitios sospechosos al instante.'] },
+                    { title: 'Misión 7: Hortensia', hook: '¿Ese formulario para un juego online te pide demasiados datos? Aprende a detectar las banderas rojas.', learnings: ['Diferenciar entre datos públicos, privados y súper sensibles.', 'Decidir con seguridad cuándo es buena idea compartir información.', 'Reconocer formularios y sitios sospechoso al instante.'] },
                     { title: 'Misión 8: Jazmín', hook: 'Ese mensaje de un príncipe nigeriano parece falso... pero algunos engaños son más sutiles. ¿Puedes detectarlos?', learnings: ['Distinguir entre un fraude, un error y manipulación intencional.', 'Analizar perfiles y mensajes sospechosos para protegerte.', 'Decidir la mejor acción: ignorar, bloquear o reportar.'] },
                     { title: 'Misión 9: Lirio', hook: 'Recibes una cadena de WhatsApp sobre un premio increíble. ¿La reenvías o la rompes?', learnings: ['Entender tu responsabilidad al compartir información.', 'Aprender a crear alertas digitales para ayudar a tus amigos.', 'Convertirte en un muro contra los fraudes en tus grupos.'] },
                     { title: 'Misión 10: Narciso', hook: 'Viste una noticia increíble, pero... ¿es real? Vamos a darte un kit de detective para la verdad.', learnings: ['Validar si una fuente es confiable o no.', 'Hacer las preguntas clave para no caer en la desinformación.', 'Saber dónde y cómo verificar lo que lees en línea.'] },
@@ -390,7 +390,7 @@
                     { title: 'Misión 18: Pavo', hook: 'Si tuvieras que diseñar una IA para tu escuela, ¿cómo te asegurarías de que sea justa con todos y no discrimine a nadie?', learnings: ['Aprender a diseñar pensando en todos para no excluir a nadie.', 'Detectar posibles sesgos o prejuicios en las ideas desde el inicio.', 'Crear soluciones con IA que de verdad ayuden y sean éticas.'] },
                     { title: 'Misión 19: Crux', hook: 'Una IA no es neutral. ¿Cómo podemos crear reglas para que sea equitativa y realmente útil para la sociedad?', learnings: ['Diseñar "reglas de equidad" para que una IA no sea injusta.', 'Evaluar el impacto social que podría tener una nueva tecnología.', 'Debatir sobre cómo la IA puede mejorar (o empeorar) la vida de las personas.'] },
                     { title: 'Misión 20: Perseus', hook: 'Si una IA crea una imagen increíble, ¿quién es el artista? ¿Tú, la IA, o el que la programó?', learnings: ['Debatir si una IA puede ser considerada "autora" de una obra.', 'Entender qué es la clonación de voz o imagen y sus implicaciones éticas.', 'Analizar el conflicto del uso de arte real para entrenar IAs.'] },
-                    { title: 'Misión 21: Aries', hook: '¿Qué es un "deepfake"? ¿Es legal vender arte hecho con IA? Es hora de hablar de los derechos en la nueva era creativa.', learnings: ['Diferenciar entre inspiración, copia y plagio cuando usas IA.', 'Entender los riscos de los deepfakes y la creación de contenido engañoso.', 'Conocer tus derechos y responsabilidades al crear y compartir contenido con IA.'] },
+                    { title: 'Misión 21: Aries', hook: '¿Qué es un "deepfake"? ¿Es legal vender arte hecho con IA? Es hora de hablar de los derechos en la nueva era creativa.', learnings: ['Diferenciar entre inspiración, copia y plagio cuando usas IA.', 'Entender los riesgos de los deepfakes y la creación de contenido engañoso.', 'Conocer tus derechos y responsabilidades al crear y compartir contenido con IA.'] },
                     { title: 'Misión 22: Phoenix', hook: 'Las personas olvidan, pero... ¿la IA olvida? ¿Debería existir un "botón de borrado" para lo que le enseñamos?', learnings: ['Descubrir cómo se entrena una IA y por qué "recuerda" todo.', 'Conocer tu "derecho al olvido" en el mundo digital.', 'Reflexionar sobre los riesgos de que la IA retenga nuestros datos para siempre.'] }
                 ]
             },
@@ -538,12 +538,6 @@
             if (data.missions.length > 0) {
                 updateDetails(0);
                 updateActiveCard(0);
-                 // Asegurarse de que la primera card está en vista
-                setTimeout(() => {
-                    if (missionCards[0]) {
-                        missionCards[0].scrollIntoView({ behavior: 'auto', block: 'center' });
-                    }
-                }, 500); // Dar tiempo a la animación de entrada
             } else {
                 detailsPanel.innerHTML = `<div id="mission-details-content"><h2>Aún no hay misiones</h2><p class="hook">El contenido para este grado se añadirá próximamente.</p></div>`;
                 listContainer.innerHTML = '';
@@ -621,10 +615,11 @@
             listContainer.addEventListener('click', (e) => {
                 const card = e.target.closest('.mission-card');
                 if (card) {
-                    const index = parseInt(card.dataset.index, 10);
-                    // Lógica corregida para priorizar el clic
+                    const index = card.dataset.index;
+                    // CORRECCIÓN DEL BUG: Actualizar inmediatamente al hacer clic
                     updateDetails(index);
                     updateActiveCard(index);
+                    // Luego, hacer el scroll para alinear visualmente
                     card.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 }
             });
