@@ -455,7 +455,7 @@
                     { title: 'Misión 5: Tyr', hook: 'No eres la misma persona en TikTok que en LinkedIn, ¿o sí? Domina el arte de adaptar tu identidad a cada red social sin perder tu esencia.', learnings: ['Analizar si tus perfiles en redes cuentan una historia coherente sobre ti.', 'Ajustar tu privacidad de forma estratégica según la plataforma que uses.', 'Adaptar tu tono para ser profesional en un lugar y casual en otro.'] },
                     { title: 'Misión 6: Sif', hook: 'Tu CV dice lo que has hecho, pero un portafolio digital *demuestra* tu talento. ¿Listo para construir el tuyo y deslumbrar a todos?', learnings: ['Aprender la estructura clave de un portafolio digital ganador.', 'Seleccionar tus mejores proyectos y habilidades para presumirlos al mundo.', 'Usar herramientas pro para crear un portafolio que se vea increíble.'] },
                     { title: 'Misión 7: Idunn', hook: 'Conocer gente en línea puede abrirte puertas increíbles. ¿Pero cómo lo haces de forma segura y para que te tomen en serio? Hablemos de networking.', learnings: ['Crear contenido que aporte valor y construya una reputación positiva.', 'Conocer las reglas no escritas del networking profesional en línea.', 'Aplicar buenas prácticas para conectar con gente de tu interés de forma ética y segura.'] },
-                    { title: 'Misión 8: Frigg', hook: 'Si le pides a una IA que dibuje a "una persona exitosa", ¿a quién dibujará? Descubre los sesgos ocultos en la tecnología y cómo podemos combatirlos.', learnings: ['Entender cómo se diseña la IA y por qué las decisiones iniciales son cruciales.', 'Ver cómo datos de mala calidad o sesgados pueden hacer que la IA sea injusta.', 'Idear soluciones para que la tecnología del futuro sea más inclusiva para todos.'] },
+                    { title: 'Misión 8: Frigg', hook: 'Si le pides a una IA que dibuje a "una persona exitosa", ¿a quién dibujará? Descubre los sesgos ocultos en la tecnología y cómo podemos combatirlos.', learnings: ['Entender cómo se diseña la IA y por qué las decisiones iniciales son cruciais.', 'Ver cómo datos de mala calidad o sesgados pueden hacer que la IA sea injusta.', 'Idear soluciones para que la tecnología del futuro sea más inclusiva para todos.'] },
                     { title: 'Misión 9: Loki', hook: 'Una IA decide quién recibe una beca. ¿Qué pasa si el algoritmo está "programado" para discriminar? Vamos a hackear la justicia algorítmica.', learnings: ['Descubrir cómo las instrucciones que le damos a una IA pueden crear sesgos.', 'Analizar cómo asegurar que la IA respete la diversidad de género, cultural y de capacidades.', 'Entender que la justicia en la IA es un problema ético y social, no solo técnico.'] },
                     { title: 'Misión 10: Njord', hook: 'Cada clic, cada búsqueda y cada video que ves genera dinero... pero, ¿para quién? Investiga quién controla la IA y cómo afecta la economía global.', learnings: ['Identificar a los gigantes tecnológicos (Big Tech) y cómo concentran el poder digital.', 'Analizar cómo la IA está cambiando la economía y creando nuevas desigualdades.', 'Reflexionar sobre modelos de IA más justos, donde los beneficios se compartan mejor.'] },
                     { title: 'Misión 11: Skadi', hook: '¿Sabías que hay personas trabajando en la sombra para "entrenar" a la IA? Descubre el trabajo invisible y la extracción de datos detrás de la tecnología que usas.', learnings: ['Conocer el rol de los "clickworkers" y moderadores que hacen posible la IA.', 'Entender el concepto de "colonialismo digital" y la extracción de datos.', 'Analizar cómo la IA está diseñada para capturar tu atención y dirigir tu consumo.'] },
@@ -616,10 +616,10 @@
                 const card = e.target.closest('.mission-card');
                 if (card) {
                     const index = card.dataset.index;
-                    // CORRECCIÓN DEL BUG: Actualizar inmediatamente al hacer clic
+                    // **BUG FIX:** Actualizar directamente al hacer clic
                     updateDetails(index);
                     updateActiveCard(index);
-                    // Luego, hacer el scroll para alinear visualmente
+                    // Luego, hacer scroll como efecto visual
                     card.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 }
             });
