@@ -606,41 +606,28 @@
 
   const options = {
     root: listContainer,
-    rootMargin: '0px 0px 0px 0px',   // menos permisivo
-    threshold: [0.01, 0.25, 0.5, 0.75, 0.99]
+    rootMargin: '0px',
+    threshold: [0.6] // requiere que ~60% de la tarjeta esté visible
   };
 
   observer = new IntersectionObserver((entries) => {
-    const rootRect = listContainer.getBoundingClientRect();
-    const centerY = rootRect.top + rootRect.height / 2;
-
-    // Escoge SOLAMENTE la tarjeta más centrada entre las que están intersectando
+    // Elegir la entrada con mayor intersección
     let best = null;
-
-    entries.forEach(entry => {
-      if (!entry.isIntersecting) return;
-      const rect = entry.target.getBoundingClientRect();
-      const cardCenter = rect.top + rect.height / 2;
-      const distance = Math.abs(cardCenter - centerY);
-      const index = Number(entry.target.dataset.index);
-
-      if (
-        !best ||
-        distance < best.distance ||
-        (distance === best.distance && index < best.index) // desempate por índice menor
-      ) {
-        best = { index, distance };
+    for (const e of entries) {
+      if (e.isIntersecting) {
+        if (!best || e.intersectionRatio > best.intersectionRatio) best = e;
       }
-    });
-
+    }
     if (best) {
-      updateDetails(best.index);
-      updateActiveCard(best.index);
+      const index = Number(best.target.dataset.index);
+      updateDetails(index);
+      updateActiveCard(index);
     }
   }, options);
 
   missionCards.forEach(card => observer.observe(card));
 }
+
 
         
         function setupClickListeners() {
