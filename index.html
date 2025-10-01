@@ -601,27 +601,47 @@
              missionCards.forEach((card, i) => card.classList.toggle('active', i == index));
         }
         
-        function setupScrollObserver() {
-            if(observer) {
-                observer.disconnect();
-            }
+       function setupScrollObserver() {
+  if (observer) observer.disconnect();
 
-            const options = {
-                root: listContainer,
-                rootMargin: '-50% 0px -50% 0px',
-                threshold: 0
-            };
-            observer = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        const index = entry.target.dataset.index;
-                        updateDetails(index);
-                        updateActiveCard(index);
-                    }
-                });
-            }, options);
-            missionCards.forEach(card => observer.observe(card));
-        }
+  const options = {
+    root: listContainer,
+    rootMargin: '0px 0px 0px 0px',   // menos permisivo
+    threshold: [0.01, 0.25, 0.5, 0.75, 0.99]
+  };
+
+  observer = new IntersectionObserver((entries) => {
+    const rootRect = listContainer.getBoundingClientRect();
+    const centerY = rootRect.top + rootRect.height / 2;
+
+    // Escoge SOLAMENTE la tarjeta más centrada entre las que están intersectando
+    let best = null;
+
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) return;
+      const rect = entry.target.getBoundingClientRect();
+      const cardCenter = rect.top + rect.height / 2;
+      const distance = Math.abs(cardCenter - centerY);
+      const index = Number(entry.target.dataset.index);
+
+      if (
+        !best ||
+        distance < best.distance ||
+        (distance === best.distance && index < best.index) // desempate por índice menor
+      ) {
+        best = { index, distance };
+      }
+    });
+
+    if (best) {
+      updateDetails(best.index);
+      updateActiveCard(best.index);
+    }
+  }, options);
+
+  missionCards.forEach(card => observer.observe(card));
+}
+
         
         function setupClickListeners() {
             listContainer.addEventListener('click', (e) => {
