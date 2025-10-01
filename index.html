@@ -502,7 +502,9 @@
         let missionCards = [];
         let currentGradeKey = null;
         let observer = null;
-        
+        let currentActiveIndex = 0;
+        let rafId = null;
+
         function renderGradeSelector() {
             gradeButtonsContainer.innerHTML = '';
             for (const key in gradeData) {
@@ -535,16 +537,18 @@
             
             if (data.missions.length > 0) {
                 // Establecer estado inicial LÓGICO
+                // después de renderizar las tarjetas:
                 updateDetails(0);
                 updateActiveCard(0);
+                currentActiveIndex = 0;
                 
-                // *** BUG FIX ***
-                // Sincronizar estado VISUAL (scroll) de forma instantánea
+                // centra visualmente la M1
                 missionCards[0].scrollIntoView({ block: 'center' });
-
-                // Activar listeners y observador DESPUÉS de que la vista es correcta
+                
+                // ahora sí, activa listeners (ya no habrá observer que lo sobrescriba)
                 setupClickListeners();
                 setupScrollObserver();
+
 
             } else {
                 detailsPanel.innerHTML = `<div id="mission-details-content"><h2>Aún no hay misiones</h2><p class="hook">El contenido para este grado se añadirá próximamente.</p></div>`;
@@ -602,45 +606,62 @@
         }
         
        function setupScrollObserver() {
-  if (observer) observer.disconnect();
+          // ya no usamos IntersectionObserver; dejamos el nombre para no tocar otras llamadas
+          if (!listContainer || !missionCards?.length) return;
+        
+          const updateByCenter = () => {
+            rafId = null;
+            const rectList = listContainer.getBoundingClientRect();
+            const centerY = rectList.top + rectList.height / 2;
+        
+            let bestIndex = 0;
+            let bestDist = Infinity;
+        
+            for (let i = 0; i < missionCards.length; i++) {
+              const r = missionCards[i].getBoundingClientRect();
+              const cardCenter = r.top + r.height / 2;
+              const dist = Math.abs(cardCenter - centerY);
+              if (dist < bestDist) {
+                bestDist = dist;
+                bestIndex = i;
+              }
+            }
+        
+            if (bestIndex !== currentActiveIndex) {
+              currentActiveIndex = bestIndex;
+              updateDetails(bestIndex);
+              updateActiveCard(bestIndex);
+            }
+          };
+        
+          const onScroll = () => {
+            if (rafId) cancelAnimationFrame(rafId);
+            rafId = requestAnimationFrame(updateByCenter);
+          };
+        
+          // Limpia posibles listeners previos
+          listContainer.removeEventListener('scroll', onScroll);
+          window.removeEventListener('resize', onScroll);
+        
+          listContainer.addEventListener('scroll', onScroll, { passive: true });
+          window.addEventListener('resize', onScroll);
+        
+          // Sincroniza una vez al montar / después del scrollIntoView inicial
+          requestAnimationFrame(updateByCenter);
+        }
 
-  const options = {
-    root: listContainer,
-    rootMargin: '0px',
-    threshold: [0.6] // requiere que ~60% de la tarjeta esté visible
-  };
-
-  observer = new IntersectionObserver((entries) => {
-    // Elegir la entrada con mayor intersección
-    let best = null;
-    for (const e of entries) {
-      if (e.isIntersecting) {
-        if (!best || e.intersectionRatio > best.intersectionRatio) best = e;
-      }
-    }
-    if (best) {
-      const index = Number(best.target.dataset.index);
-      updateDetails(index);
-      updateActiveCard(index);
-    }
-  }, options);
-
-  missionCards.forEach(card => observer.observe(card));
-}
 
 
         
         function setupClickListeners() {
-            listContainer.addEventListener('click', (e) => {
-                const card = e.target.closest('.mission-card');
-                if (card) {
-                    const index = card.dataset.index;
-                    // El scroll suave es solo para la interacción del clic,
-                    // no para el estado inicial.
-                    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }
-            });
+          listContainer.addEventListener('click', (e) => {
+            const card = e.target.closest('.mission-card');
+            if (!card) return;
+            card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            // No llamamos updateDetails aquí; lo hará el scroll handler estable.
+          });
         }
+
         
         backToGradesButton.addEventListener('click', () => {
             widgetContainer.classList.remove('chatbot-active');
