@@ -499,8 +499,10 @@
         const listContainer = document.getElementById('missions-list-container');
         const detailsPanel = document.getElementById('mission-details');
         const backToGradesButton = document.getElementById('back-to-grades-button');
+        
         let missionCards = [];
         let currentGradeKey = null;
+        let observer = null;
         
         function renderGradeSelector() {
             gradeButtonsContainer.innerHTML = '';
@@ -532,10 +534,9 @@
 
             renderMissionList(data.missions);
             
-            setupScrollObserver();
-            setupClickListeners();
-            
             if (data.missions.length > 0) {
+                setupScrollObserver();
+                setupClickListeners();
                 updateDetails(0);
                 updateActiveCard(0);
             } else {
@@ -559,8 +560,8 @@
 
         function updateDetails(index) {
             const data = gradeData[currentGradeKey];
+            if (!data || !data.missions[index]) return;
             const mission = data.missions[index];
-            if (!mission) return;
             
             detailsPanel.innerHTML = `
                 <div id="mission-details-content">
@@ -594,15 +595,16 @@
         }
         
         function setupScrollObserver() {
+            if (observer) observer.disconnect();
             const options = {
                 root: listContainer,
                 rootMargin: '-50% 0px -50% 0px',
                 threshold: 0
             };
-            const observer = new IntersectionObserver((entries) => {
+            observer = new IntersectionObserver((entries) => {
                 entries.forEach(entry => {
                     if (entry.isIntersecting) {
-                        const index = entry.target.dataset.index;
+                        const index = parseInt(entry.target.dataset.index, 10);
                         updateDetails(index);
                         updateActiveCard(index);
                     }
@@ -615,12 +617,26 @@
             listContainer.addEventListener('click', (e) => {
                 const card = e.target.closest('.mission-card');
                 if (card) {
-                    const index = card.dataset.index;
-                    // **BUG FIX:** Actualizar directamente al hacer clic
+                    const index = parseInt(card.dataset.index, 10);
+
+                    // BUG FIX: Desconectar temporalmente el observador para evitar la condición de carrera.
+                    if (observer) {
+                        observer.disconnect();
+                    }
+
+                    // Actualizar la UI inmediatamente con la selección del usuario.
                     updateDetails(index);
                     updateActiveCard(index);
-                    // Luego, hacer scroll como efecto visual
+
+                    // Hacer scroll como un efecto visual secundario.
                     card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+                    // Reconectar el observador después de que la animación de scroll haya terminado.
+                    setTimeout(() => {
+                        if (observer) {
+                            missionCards.forEach(mc => observer.observe(mc));
+                        }
+                    }, 500); // 500ms es un tiempo seguro para la mayoría de animaciones de scroll.
                 }
             });
         }
